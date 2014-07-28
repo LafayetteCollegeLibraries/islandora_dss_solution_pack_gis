@@ -30,6 +30,15 @@ _(Much of this was identified by John H. Clark, the Data Visualization and GIS L
   * MODS data should be managed within a datastream **(inline XML)** (this would follow the schema outlined by contributors to the GeoHydra Project [i. e. GML envelopes and other OGP vocab. terms integrated with a MODS schema])
      * *We were intending to request to use [an XSL Stylesheet developed by the GeoHydra contributors](https://github.com/sul-dlss/geohydra/blob/master/ogp/fgdc2mods.xsl)*
 
+## University of Toronto Scarborough Campus
+_(This was posed as a question by [Kim Pham](https://twitter.com/tolloid) of the Digital Scholarship Unit at the UTSC Library)_
+
+* Managing Feature Sets (for interfacing with a Web Feature Service [GeoServer])
+ * Managing an ESRI Shapefile
+     * How must .shp.xml content be managed?
+     * How must .mxd content be managed?
+     * How must .lyr content be managed?
+
 # User Stories
 
 ## Lafayette College Libraries
