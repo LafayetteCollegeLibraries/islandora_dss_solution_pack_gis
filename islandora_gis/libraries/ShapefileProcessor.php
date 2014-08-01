@@ -6,13 +6,12 @@
    * @author griffinj@lafayette.edu
    */
 
-  /**
-   * This Class implements the methods defined in the Islandora GIS Shapefile Content Model
-   *
-   */
-
 require 'Ogre.php';
 
+/**
+ * ShapefileProcess Class implements the methods defined in the Islandora GIS Shapefile Content Model
+ *
+ */
 class ShapefileProcessor {
 
   const GML_SCHEMA_URI = 'http://schemas.opengis.net/gml/3.2.1/gmlBase.xsd';
@@ -23,18 +22,16 @@ class ShapefileProcessor {
 
   /**
    * Constructor
+   * @param string $ogreUri The URI for the ogre Node.js app.
+   * @param string $ogr2ogr_bin_path The path to the ogr2ogr binary
    *
    */
-  function LargeImageProcessor($ogreUri = 'http://localhost:3000', $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+  function ShapefileProcessor($ogreUri = 'http://localhost:3000', $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
 
     $this->ogre = new Ogre($ogreUri);
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
   }
 
-  /**
-   * Validate the XML Document against a schema
-   *
-   */
   private function validateXml($schemaDoc) {
 
     return FALSE;
@@ -50,7 +47,10 @@ class ShapefileProcessor {
   }
 
   /**
-   * Invoke the ogr2ogr binary from the server
+   * Invoke the ogr2ogr binary within the local environment
+   *
+   * @return string The resulting value of the command-line invocation
+   * @access private
    *
    */
   private function ogr2ogr() {
@@ -68,6 +68,11 @@ class ShapefileProcessor {
   /**
    * Validate the XML Document against a schema
    *
+   * @param string $doc_file_path The file path to the XML Document being validated
+   * @param string $doc_schema_uri The URI for the XML Schema Document
+   * @return string The results of the validation
+   * @access private
+   *
    */
   private function validate($doc_file_path, $doc_schema_uri) {
 
@@ -84,7 +89,7 @@ class ShapefileProcessor {
    * @param type $dsid
    * @param type $file
    * @param type $file_ext
-   * @return
+   * @return The resulting value of the ogr2ogr invocation
    */
   public function deriveGml($parameterArray = NULL, $dsid, $file, $file_ext) {
 
@@ -115,7 +120,7 @@ class ShapefileProcessor {
    * @param type $dsid
    * @param type $file
    * @param type $file_ext
-   * @return
+   * @return The resulting value of the ogr2ogr invocation
    */
   public function deriveKml($parameterArray = NULL, $dsid, $file, $file_ext) {
 
@@ -145,9 +150,8 @@ class ShapefileProcessor {
    * @param type $dsid
    * @param type $file
    * @param type $file_ext
-   *
    * @todo Implement with an esri2open-based service
-   * @return
+   * @return The resulting value of the ogr2ogr invocation
    */
   public function deriveTopoJson($parameterArray = NULL, $dsid, $shape_file_path, $file_ext) {
 
@@ -169,7 +173,7 @@ class ShapefileProcessor {
    * @param type $dsid
    * @param type $file
    * @param type $file_ext
-   * @return
+   * @return string The cURL session results from the POST request to ogre
    */
   public function deriveJson($parameterArray = NULL, $dsid, $shape_file_path, $file_ext) {
 

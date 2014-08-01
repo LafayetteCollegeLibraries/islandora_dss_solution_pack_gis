@@ -17,6 +17,8 @@ class Ogre {
   /**
    * Constructor
    *
+   * @param string $uri
+   *
    */
   function Ogre($uri = 'http://localhost:3000') {
     
@@ -28,6 +30,8 @@ class Ogre {
    *
    * @param string $url
    * @param array $data
+   * @param string $download_path
+   * @return string result of the cURL session
    * @todo Abstract and refactor for Ips::post()
    *
    */
@@ -64,6 +68,14 @@ class Ogre {
     return $result;
   }
 
+  /**
+   * The method wrapping the "convert" route for the ogre Node.js application
+   *
+   * @param string $source_file_path
+   * @param string $response_file_path
+   * @return string The cURL session results from the POST request to ogre
+   *
+   */
   public function convert($source_file_path, $response_file_path = NULL) {
 
     $response = $this->post($this->uri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
