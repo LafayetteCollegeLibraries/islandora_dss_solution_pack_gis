@@ -1,0 +1,45 @@
+<content_model xmlns="http://www.islandora.ca"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="large_image"
+    xsi:schemaLocation="http://www.islandora.ca http://localhost/islandoracm.xsd">
+    <mimetypes>
+        <type>application/zip</type>
+	<type>application/msaccess</type>
+    </mimetypes>
+    <ingest_rules>
+        <rule>
+            <applies_to>application/zip</applies_to><!-- The ingestion rule for SHP Datastream -->
+            <ingest_methods>
+              <ingest_method class="ShapefileProcessor" dsid="GML"
+			     file="includes/ShapefileProcessor.php" method="deriveGml"
+			     modified_files_ext="gml.xml" module="islandora_gis"/>
+              <ingest_method class="ShapefileProcessor" dsid="KML"
+			     file="includes/ShapefileProcessor.php" method="deriveKml"
+			     modified_files_ext="kml.xml" module="islandora_gis"/>
+              <ingest_method class="ShapefileProcessor" dsid="JSON"
+			     file="includes/ShapefileProcessor.php" method="deriveJson"
+			     modified_files_ext="geojson.json" module="islandora_gis"/>
+            </ingest_methods>
+            <applies_to>application/msaccess</applies_to><!-- The ingestion rule for GEODB Datastream -->
+            <ingest_methods>
+              <ingest_method class="ShapefileProcessor" dsid="JSON"
+			     file="includes/ShapefileProcessor.php" method="deriveTopoJson"
+			     modified_files_ext="topojson.json" module="islandora_gis"/>
+            </ingest_methods>
+        </rule>
+    </ingest_rules>
+    <datastreams>
+        <datastream dsid="RELS-EXT"/>
+        <datastream dsid="DC"/>
+        <datastream dsid="MODS"/>
+        <datastream dsid="SHP" /><!-- Datastream for the compressed Shapefile -->
+        <datastream dsid="GML" /><!-- Datastream for the GML Document derived from the Shapefile-->
+        <datastream dsid="KML" /><!-- Datastream for the KML Document derived from the Shapefile-->
+        <datastream dsid="JSON" /><!-- Datastream for the GeoJSON Object derived from the Shapefile-->
+        <datastream dsid="MXD" /><!-- Datastream for the .mxd file generated for a given project -->
+        <datastream dsid="LYR" /><!-- Datastream for the .lyr file generated for a given project -->
+        <datastream dsid="GEODB" /><!--
+				      Datastream for the .mdb geodatabase file generated for a given project
+				      Please note that Lafayette College Libraries only uses the content of this datastream in order to generate TopoJSON
+				     -->
+    </datastreams>
+</content_model>
