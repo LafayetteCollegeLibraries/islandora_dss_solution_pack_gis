@@ -28,7 +28,7 @@ class ShapefileProcessor {
    */
   function ShapefileProcessor($ogreUri = 'http://localhost:3000', $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
 
-    $this->ogre = new Ogre($ogreUri);
+    //$this->ogre = new Ogre($ogreUri);
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
   }
 
@@ -58,7 +58,7 @@ class ShapefileProcessor {
     $args = func_get_args();
     $returnValue = FALSE;
 
-    $invocation = "{ $this->ogr2ogr_bin_path } { implode(' ', $args) }";
+    $invocation = $this->ogr2ogr_bin_path . ' ' . implode(' ', $args);
 
     $returnValue = exec(escapeshellcmd($invocation));
 
@@ -181,7 +181,8 @@ class ShapefileProcessor {
     $json_file_path = preg_replace('/\.shp$/', ".$file_ext", $shape_file_path);
 
     // Submit the POST request to ogre
-    $returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
+    //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
+    $returnValue = $this->ogr2ogr('-f GeoJSON', $json_file_path, $shape_file_path);
     
     if ($returnValue == '0') {
 

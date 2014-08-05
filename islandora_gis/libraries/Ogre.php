@@ -41,6 +41,8 @@ class Ogre {
     $ch = curl_init();
     $encoded_data = http_build_query($data);
 
+    print_r($encoded_data);
+
     // Set the options for the POST request
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, count($data));
@@ -78,7 +80,7 @@ class Ogre {
    */
   public function convert($source_file_path, $response_file_path = NULL) {
 
-    $response = $this->post($this->uri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
+    $response = $this->post($this->uri . '/convert', array('upload' => '@' . $source_file_path . ';filename=' . basename($source_file_path)), $response_file_path);
 
     return $response;
   }
