@@ -15,26 +15,42 @@ class ShapefileProcessorTest extends PHPUnit_Framework_TestCase {
 
     $this->processor = new ShapefileProcessor();
     $this->source_file = dirname(__DIR__) . '/tests/fixtures/test.shp';
+    $this->gml_file = dirname(__DIR__) . '/tests/fixtures/test.gml.xml';
+    $this->kml_file = dirname(__DIR__) . '/tests/fixtures/test.kml.xml';
     $this->geo_json_file = dirname(__DIR__) . '/tests/fixtures/test.geojson.json';
   }
 
-  //   public function deriveGml($parameterArray = NULL, $dsid, $file, $file_ext) {
+  /**
+   *
+   */
   public function testDeriveGml() {
 
-    
+    $this->processor->deriveGml(array(), 'GML', $this->source_file, 'gml.xml');
   }
 
-  //  public function deriveKml($parameterArray = NULL, $dsid, $file, $file_ext) {
+  /**
+   *
+   */
   public function testDeriveKml() {
 
+    $this->processor->deriveKml(array(), 'KML', $this->source_file, 'kml.xml');
   }
 
-  //deriveJson($parameterArray = NULL, $dsid, $shape_file_path, $file_ext)
+  /**
+   *
+   */
   public function testDeriveJson() {
 
-    $this->processor->deriveJson(array(), 'JSON', $this->source_file, '.geojson.json');
+    $this->processor->deriveJson(array(), 'JSON', $this->source_file, 'geojson.json');
   }
 
+  protected function tearDown() {
+
+    if(file_exists($this->geo_json_file)) {
+
+      unlink($this->geo_json_file);
+    }
+  }
 }
 
 ?>

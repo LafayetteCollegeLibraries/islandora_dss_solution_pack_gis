@@ -6,6 +6,7 @@
    * @author griffinj@lafayette.edu
    */
 
+require 'vendor/autoload.php';
 require 'Ogre.php';
 
 /**
@@ -30,20 +31,68 @@ class ShapefileProcessor {
 
     //$this->ogre = new Ogre($ogreUri);
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
+
+    // Get the schema and data as objects
+    $this->json_schema_retriever = new JsonSchema\Uri\UriRetriever;
   }
 
-  private function validateXml($schemaDoc) {
+  /**
+   * Validate the XML Document against a schema
+   *
+   * @param string $doc_file_path The file path to the XML Document being validated
+   * @param string $doc_schema_uri The URI for the XML Schema Document
+   * @return string The results of the validation
+   * @access private
+   *
+   */
+  private function validate($doc_file_path, $doc_schema_uri) {
 
-    return FALSE;
+    $doc = new DOMDocument();
+    $doc->load($doc_file_path);
+
+    return $doc->schemaValidate($doc_schema_uri);
   }
 
   /**
    * Validate the JSON Object against a schema
    *
+   * @param string $json_file_path The file path to the JSON Object being validated
+   * @param string $uri The URL for the JSON Schema Object
+   * @return string A concatenated string of validation errors
+   * @access private
+   *
    */
-  private function validateJson() {
+  private function validateJson($json_file_path, $uri = 'file://schema.json') {
 
-    return FALSE;
+    $schema = $this->json_schema_retriever->retrieve($uri);
+    $data = json_decode($json_file_path);
+
+    // If you use $ref or if you are unsure, resolve those references here
+    // This modifies the $schema object
+
+    /**
+     * This fails for the current schema implementation
+     * @todo Evaluate GeoJSON schemata Objects which can have URI references resolved
+     *
+     */
+    //$refResolver = new JsonSchema\RefResolver($this->json_schema_retriever);
+    //$refResolver->resolve($schema, 'file://' . __DIR__);
+
+    // Validate against the JSON Schema
+    $validator = new JsonSchema\Validator();
+    $validator->check($data, $schema);
+    if ($validator->isValid()) {
+
+      return TRUE;
+    }
+
+    // ..and if there are errors, return them within a concatenated string.
+    $errors = array_map(function($error) {
+
+	return sprintf("[%s] %s\n", $error['property'], $error['message']);
+      }, $validator->getErrors());
+
+    return "JSON does not validate. Violations:\n" . implode("\n", $errors);
   }
 
   /**
@@ -66,23 +115,6 @@ class ShapefileProcessor {
   }
 
   /**
-   * Validate the XML Document against a schema
-   *
-   * @param string $doc_file_path The file path to the XML Document being validated
-   * @param string $doc_schema_uri The URI for the XML Schema Document
-   * @return string The results of the validation
-   * @access private
-   *
-   */
-  private function validate($doc_file_path, $doc_schema_uri) {
-
-    $doc = new DOMDocument();
-    $doc->load($doc_file_path);
-
-    return $doc->schemaValidate('schema.xsd');
-  }
-
-  /**
    * Generate the GML Document derivative
    *
    * @param type $parameterArray
@@ -91,7 +123,7 @@ class ShapefileProcessor {
    * @param type $file_ext
    * @return The resulting value of the ogr2ogr invocation
    */
-  public function deriveGml($parameterArray = NULL, $dsid, $file, $file_ext) {
+  public function deriveGml($parameterArray = NULL, $dsid, $shape_file_path, $file_ext) {
 
     // Construct the file path for the KML Document
     $gml_file_path = preg_replace('/\.shp$/', ".$file_ext", $shape_file_path);
@@ -100,7 +132,7 @@ class ShapefileProcessor {
     $returnValue = $this->ogr2ogr('-f GML', $gml_file_path, $shape_file_path);
 
     // Validate against the schema
-    $this->validate($shape_file_path, self::GML_SCHEMA_URI);
+    //$this->validate($gml_file_path, self::GML_SCHEMA_URI);
 
     if ($returnValue == '0') {
 
@@ -122,7 +154,7 @@ class ShapefileProcessor {
    * @param type $file_ext
    * @return The resulting value of the ogr2ogr invocation
    */
-  public function deriveKml($parameterArray = NULL, $dsid, $file, $file_ext) {
+  public function deriveKml($parameterArray = NULL, $dsid, $shape_file_path, $file_ext) {
 
     // Construct the file path for the KML Document
     $kml_file_path = preg_replace('/\.shp$/', ".$file_ext", $shape_file_path);
@@ -131,7 +163,7 @@ class ShapefileProcessor {
     $returnValue = $this->ogr2ogr('-f KML', $kml_file_path, $shape_file_path);
 
     // Validate against the schema
-    $this->validate($shape_file_path, self::KML_SCHEMA_URI);      
+    //$this->validate($kml_file_path, self::KML_SCHEMA_URI);      
 
     if ($returnValue == '0') {
 
@@ -183,7 +215,9 @@ class ShapefileProcessor {
     // Submit the POST request to ogre
     //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
     $returnValue = $this->ogr2ogr('-f GeoJSON', $json_file_path, $shape_file_path);
-    
+
+    $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
+
     if ($returnValue == '0') {
 
       // Ingest the GeoJSON file into the "JSON" datastream
