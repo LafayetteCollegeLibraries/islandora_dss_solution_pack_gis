@@ -1,0 +1,69 @@
+<?php
+
+  /**
+   * @file Core hook implementations and functionality for GIS Content
+   * @author griffinj@lafayette.edu
+   *
+   */
+
+  /**
+   * Implements hook_islandora_required_objects().
+   *
+   * @param IslandoraTuque $connection Tuque instance for Fedora Commons
+   * @return type
+   */
+function islandora_gis_islandora_required_objects(IslandoraTuque $connection) {
+
+  $module_path = drupal_get_path('module', 'islandora_gis');
+
+  // GIS Content Model
+  $gis_content_model = $connection->repository->constructObject('islandora:sp_shapefile_cmodel');
+  $gis_content_model->owner = 'fedoraAdmin';
+  $gis_content_model->label = 'Islandora GIS Content Model';
+  $gis_content_model->models = 'fedora-system:ContentModel-3.0';
+
+  // ISLANDORACM Datastream
+  $datastream = $gis_content_model->constructDatastream('ISLANDORACM', 'X');
+  $datastream->label = 'Islandora content model';
+  $datastream->mimetype = 'text/xml';
+  $datastream->setContentFromFile("$module_path/xml/islandora_sp_shapefile_cmodel.xml", FALSE);
+  $gis_content_model->ingestDatastream($datastream);
+
+  // DS-COMPOSITE-MODEL Datastream
+  $datastream = $gis_content_model->constructDatastream('DS-COMPOSITE-MODEL', 'X');
+  $datastream->label = 'DS-COMPOSITE-MODEL';
+  $datastream->mimetype = 'text/xml';
+  $datastream->setContentFromFile("$module_path/xml/islandora_shapefile_ds_composite_model.xml", FALSE);
+  $gis_content_model->ingestDatastream($datastream);
+
+  // Esri Shapefile Collection
+  $gis_collection = $connection->repository->constructObject('islandora:sp_shapefile_collection');
+  $gis_collection->owner = 'fedoraAdmin';
+  $gis_collection->label = 'Esri Shapefile Collection';
+  $gis_collection->models = 'islandora:collectionCModel';
+  $gis_collection->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', 'islandora:root');
+
+  // Collection Policy Datastream
+  $datastream = $gis_collection->constructDatastream('COLLECTION_POLICY', 'X');
+  $datastream->label = 'Collection policy';
+  $datastream->mimetype = 'text/xml';
+  $datastream->setContentFromFile("$module_path/xml/islandora_shapefile_collection_policy.xml", FALSE);
+  $gis_collection->ingestDatastream($datastream);
+
+  // TN Datastream
+  $datastream = $gis_collection->constructDatastream('TN', 'M');
+  $datastream->label = 'Thumbnail';
+  $datastream->mimetype = 'image/png';
+  $datastream->setContentFromFile("$module_path/images/folder.png", FALSE);
+  $gis_collection->ingestDatastream($datastream);
+
+  return array(
+    'islandora_gis' => array(
+      'title' => 'Islandora GIS',
+      'objects' => array(
+        $gis_content_model,
+        $gis_collection,
+      )
+    )
+  );
+}
