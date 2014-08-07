@@ -3,7 +3,7 @@
 require dirname(__DIR__) . '/ShapefileProcessor.php';
 
 /**
- * Test for the ShapefileProcessor
+ * Tests for ShapefileProcessor
  * @author griffinj@lafayette.edu
  *
  */
