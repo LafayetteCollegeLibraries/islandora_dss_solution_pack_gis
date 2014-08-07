@@ -27,9 +27,8 @@ class ShapefileProcessor {
    * @param string $ogr2ogr_bin_path The path to the ogr2ogr binary
    *
    */
-  function ShapefileProcessor($ogreUri = 'http://localhost:3000', $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+  public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
 
-    //$this->ogre = new Ogre($ogreUri);
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
 
     // Get the schema and data as objects
@@ -239,11 +238,24 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
   private $object;
   private $shape_file_path;
 
-  public function ShapefileObjectProcessor($object, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+  /**
+   * Constructor
+   *
+   */
+  public function __construct($object, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
 
     $this->object = $object;
     $this->shape_file_path = getShapefile($object);
-    self::parent($ogr2ogr_bin_path);
+    parent::__construct($ogr2ogr_bin_path);
+  }
+
+  /**
+   * Destructor
+   *
+   */
+  public function __destruct() {
+
+    $this->deleteShapefile($this->shape_file_path, $this->object);
   }
   
   /**
@@ -275,7 +287,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       throw new Exception();
     }
 
-    $shape_file_path = array_shift(glob($shapefile_content_path . '/*.[Ss[Hh[Pp]'));
+    $shape_file_path = array_shift(glob($shapefile_content_path . '/*.[Ss][Hh][Pp]'));
 
     return $shape_file_path;
   }
@@ -307,6 +319,34 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
   }
 
   /**
+   * Generate the GML Document for ingestion
+   * @param FedoraObject $object Islandora Object
+   * @return string the file system path to the GML Document
+   *
+   */
+  public function deriveGml($object = NULL) {
+
+    $shape_file_path = $this->shape_file_path;
+
+    // Construct the file path for the GML Document
+    $gml_file_path = preg_replace('/\.shp$/', ".$gml.xml", $shape_file_path);
+
+    // Invoke the ogr2ogr binary in order to generate the GML Document from the .SHP file
+    $returnValue = $this->ogr2ogr('-f GML', $gml_file_path, $shape_file_path);
+
+    // Validate against the schema
+    //$this->validate($gml_file_path, self::GML_SCHEMA_URI);      
+
+    if ($returnValue == '0') {
+
+      return $gml_file_path;
+    } else {
+
+      return $returnValue;
+    }
+  }
+
+  /**
    * Generate the KML Document for ingestion
    * @param FedoraObject $object Islandora Object
    * @return string the file system path to the KML Document
@@ -314,7 +354,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
    */
   public function deriveKml($object = NULL) {
 
-    $shape_file_path = $this->getShapefile();
+    $shape_file_path = $this->shape_file_path;
 
     // Construct the file path for the KML Document
     $kml_file_path = preg_replace('/\.shp$/', ".$kml.xml", $shape_file_path);
@@ -331,6 +371,38 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     } else {
 
       return $returnValue;
+    }
+  }
+
+  public function deriveJson($object = NULL) {
+
+    $shape_file_path = $this->shape_file_path;
+
+    // Construct the file path for the GeoJSON Object
+    $json_file_path = preg_replace('/\.shp$/', ".geojson.json", $shape_file_path);
+
+    // Submit the POST request to ogre
+    //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
+    $returnValue = $this->ogr2ogr('-f GeoJSON', $json_file_path, $shape_file_path);
+
+    $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
+
+    if ($returnValue == '0') {
+
+      return $json_file_path;
+    } else {
+
+      return $returnValue;
+    }
+  }
+
+  public function derive($dsid) {
+
+    $method_name = 'derive' . substr($dsid, 0, 1) . substr($dsid, 1);
+
+    if(method_exists($this, $method_name)) {
+
+      return call_user_func_array(array($this, $method_name), array());
     }
   }
 }
