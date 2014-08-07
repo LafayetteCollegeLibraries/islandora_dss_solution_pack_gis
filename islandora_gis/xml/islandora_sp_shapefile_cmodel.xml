@@ -1,3 +1,9 @@
+<!--
+   *
+   * @file Content Model implementation for the Islandora Shapefile Object
+   * @author griffinj@lafayette.edu
+   *
+  -->
 <content_model xmlns="http://www.islandora.ca"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="large_image"
     xsi:schemaLocation="http://www.islandora.ca http://localhost/islandoracm.xsd">
