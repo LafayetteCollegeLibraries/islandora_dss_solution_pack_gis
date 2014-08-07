@@ -6,6 +6,8 @@
    *
    */
 
+require 'libraries/ShapefileProcessor.php';
+
   /**
    * Implements hook_islandora_required_objects().
    *
@@ -356,8 +358,64 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
  */
 function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($object) {
 
-  /**
-   * @todo Implement functionality for operations after the ingestion of the object
-   *
-   */
+  $processor = new ShapefileProcessor();
+
+  // Manually invoke the ShapefileProcessor methods for non-existent derivative datastreams
+  foreach(array('GML' => 'gml.xml',
+		'KML' => 'kml.xml',
+		'JSON' => 'geojson.json') as $dsid) {
+
+    if(!isset($object[$dsid])) {
+
+      $method = 'ingest' . substr($dsid, 0, 1) . strtolower(substr($dsid, 1));
+      //$processor->$method;
+      call_user_func_array(array($processor, $method), array());
+    }
+  }
+
+  // Ingest the datastreams for the object
+  foreach($_SESSION['fedora_ingest_files'] as $dsid => $datastream_file) {
+
+    $control_group = 'M';
+
+    // If this is an XML Document, set the datastream type to "Inline [X]ML"
+    if(preg_match('/\.xml$/', $datastream_file)) {
+
+      $control_group = 'X';
+    }
+
+    // @see islandora_prepare_new_object().
+    $datastream = $object->constructDatastream($dsid, $control_group);
+    $datastream->label = $label;
+    $datastream->mimetype = $mimetype;
+
+    $is_valid_url = filter_var($datastream_file, FILTER_VALIDATE_URL) === FALSE;
+
+    switch ($control_group) {
+
+    case 'M':
+      if($is_valid_url) {
+
+	$datastream->setContentFromUrl($datastream_file);
+      } else {
+
+	$datastream->setContentFromFile($datastream_file);
+      }
+      break;
+
+    case 'X':
+
+      $datastream->setContentFromString(file_get_contents($datastream_file));
+      break;
+    }
+
+    try {
+
+      $object->ingestDatastream($datastream);
+    } catch (Exception $e) {
+
+      watchdog('islandora_gis', $e->getMessage(), NULL, WATCHDOG_ERROR);
+      drupal_set_message(t('A problem occured while ingesting the datastream "@label" for @pid, please notify the administrator.', array('@label' => $label, '@pid' => $object->id)), 'error');
+    }
+  }
 }

@@ -229,4 +229,108 @@ class ShapefileProcessor {
     }
   }
 
+}
+
+/**
+ *
+ */
+class ShapefileObjectProcessor extends ShapefileProcessor {
+
+  private $object;
+  private $shape_file_path;
+
+  public function ShapefileObjectProcessor($object, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+
+    $this->object = $object;
+    $this->shape_file_path = getShapefile($object);
+    self::parent($ogr2ogr_bin_path);
   }
+  
+  /**
+   * Decompress and retrieve the path to the SHP file
+   * @param FedoraObject $object
+   * @returns string the file system path to the SHP file
+   *
+   */
+  private function getShapefile($object) {
+
+    // Retrieve the compressed Shapefile from Islandora
+    $dir_path = '/tmp/' . preg_replace('/[\s:]/', '_', $object->id);
+    $file_path = $dir_path . '_SHP.zip';
+    $file = fopen($file_path, 'wb');
+
+    fwrite($file, $object['SHP']->content);
+    fclose($file);
+
+    $shapefile_content_path = $dir_path . '_SHP';
+
+    // Create the directory, decompress the contents    
+    $zip = new ZipArchive;
+    if(mkdir($shapefile_content_path) and $zip->open($file_path) === TRUE) {
+
+      $zip->extractTo($shapefile_content_path);
+      $zip->close();
+    } else {
+
+      throw new Exception();
+    }
+
+    $shape_file_path = array_shift(glob($shapefile_content_path . '/*.[Ss[Hh[Pp]'));
+
+    return $shape_file_path;
+  }
+
+  /**
+   * Delete the decompressed Shapefile content
+   * @param string the file system path to the SHP file
+   *
+   */
+  private function deleteShapefile($shape_file_path, $object) {
+
+    $shape_file_path = pathinfo(realpath($shape_file_path), PATHINFO_DIRNAME);
+    $shapefile_content_dir = dirname($shape_file_path);
+
+    // Remove the contents of the directory
+    $files = array_diff(scandir($shapefile_content_dir), array('.','..'));
+    foreach($files as $file) {
+
+      (is_dir("$shapefile_content_dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
+    }
+
+    // Remove the directory itself
+    rmdir($shapefile_content_dir);
+
+    // Remove the compressed Shapefile
+    $dir_path = '/tmp/' . preg_replace('/[\s:]/', '_', $object->id);
+    $file_path = $dir_path . '_SHP.zip';
+    return unlink($file_path);
+  }
+
+  /**
+   * Generate the KML Document for ingestion
+   * @param FedoraObject $object Islandora Object
+   * @return string the file system path to the KML Document
+   *
+   */
+  public function deriveKml($object = NULL) {
+
+    $shape_file_path = $this->getShapefile();
+
+    // Construct the file path for the KML Document
+    $kml_file_path = preg_replace('/\.shp$/', ".$kml.xml", $shape_file_path);
+
+    // Invoke the ogr2ogr binary in order to generate the KML Document from the .SHP file
+    $returnValue = $this->ogr2ogr('-f KML', $kml_file_path, $shape_file_path);
+
+    // Validate against the schema
+    //$this->validate($kml_file_path, self::KML_SCHEMA_URI);      
+
+    if ($returnValue == '0') {
+
+      return $kml_file_path;
+    } else {
+
+      return $returnValue;
+    }
+  }
+}
