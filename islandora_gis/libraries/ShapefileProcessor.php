@@ -6,8 +6,8 @@
    * @author griffinj@lafayette.edu
    */
 
-require 'vendor/autoload.php';
-require 'Ogre.php';
+include 'vendor/autoload.php';
+//require 'Ogre.php';
 
 /**
  * ShapefileProcess Class implements the methods defined in the Islandora GIS Shapefile Content Model

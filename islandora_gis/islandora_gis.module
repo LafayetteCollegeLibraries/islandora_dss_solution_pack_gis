@@ -6,7 +6,10 @@
    *
    */
 
-require 'libraries/ShapefileProcessor.php';
+$module_path = drupal_get_path('module', 'islandora_gis');
+@include_once "$module_path/vendor/autoload.php";
+@include_once "$module_path/libraries/ShapefileProcessor.php";
+
 
   /**
    * Implements hook_islandora_required_objects().
@@ -205,10 +208,15 @@ function islandora_gis_layer_load_geoserver($object) {
   return $ol_layers;
 }
 
+/**
+ * Generate a layer from the JSON Datastream content within an Islandora Object
+ * @param FedoraObject $object
+ * @returns array layer
+ */
 function islandora_gis_layer_load_geojson($object) {
 
   $layer_title = $object->label;
-  $layer_name = preg_replace('/\s/', '_', strtolower($map_title));
+  $layer_name = preg_replace('/\s/', '_', strtolower($layer_title));
 
   $geojson_data = $object['JSON']->content;
   
@@ -312,7 +320,10 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 		  'mapquest_openaerial' => 'mapquest_openaerial',
 		  'openlayers_geojson_picture_this' => 'openlayers_geojson_picture_this',
 		  );
-  $default_layer = 'openlayers_geojson_picture_this';
+  $geojson_layer = islandora_gis_layer_load_geojson($object);
+  $layers['islandora_geojson'] = $geojson_layer;
+
+  $default_layer = 'islandora_geojson';
 
   $openlayers_maps->data = array(
 				 'width' => 'auto',
@@ -336,6 +347,8 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 						   'temporary' => 'default',
 						   ),
 				 );
+
+  return $openlayers_maps->data;
 }
 
 /**
@@ -372,7 +385,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
       $control_group = 'M';
       $mimetype = '';
 
-      $label = $object->label . "($ds_label)";
+      $label = $object->label . " ($ds_label)";
 
       // If this is an XML Document, set the datastream type to "Inline [X]ML"
       if(preg_match('/\.xml$/', $datastream_file)) {
@@ -382,7 +395,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 	if(preg_match('/\.gml\.xml$/', $datastream_file)) {
 
 	  $mimetype = 'application/gml+xml';
-	} elseif(preg_match('/\.gml\.xml$/', $datastream_file)) {
+	} elseif(preg_match('/\.kml\.xml$/', $datastream_file)) {
 
 	  $mimetype = 'application/vnd.google-earth.kml+xml';
 	}
@@ -396,7 +409,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
       $datastream->label = $label;
       $datastream->mimetype = $mimetype;
 
-      $is_valid_url = filter_var($datastream_file, FILTER_VALIDATE_URL) === FALSE;
+      $is_valid_url = filter_var($datastream_file, FILTER_VALIDATE_URL) === TRUE;
 
       switch ($control_group) {
 
