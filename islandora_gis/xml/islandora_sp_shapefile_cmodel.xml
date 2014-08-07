@@ -5,7 +5,7 @@
    *
   -->
 <content_model xmlns="http://www.islandora.ca"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="large_image"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="shapefile"
     xsi:schemaLocation="http://www.islandora.ca http://localhost/islandoracm.xsd">
     <mimetypes>
         <type>application/zip</type>

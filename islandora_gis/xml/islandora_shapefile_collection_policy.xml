@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
    *
    * @file Islandora Collection Policy for Collection of Shapefiles
@@ -5,7 +6,6 @@
    *
    * @todo Should this be extended for more heterogenous collections (e. g. Large Image Objects containing georectified or georeferenced TIFF files?)
   -->
-<?xml version="1.0" encoding="utf-8"?>
 <collection_policy xmlns="http://www.islandora.ca"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Esri Shapefile Collection"
     xsi:schemaLocation="http://www.islandora.ca http://syn.lib.umanitoba.ca/collection_policy.xsd">

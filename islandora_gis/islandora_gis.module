@@ -80,14 +80,15 @@ function islandora_gis_islandora_required_objects(IslandoraTuque $connection) {
 function islandora_gis_theme($existing, $type, $theme, $path) {
   return array(
     'islandora_gis' => array(
+      'variables' => array('islandora_object' => NULL),
+      'file' => 'theme/theme.inc',
       'template' => 'theme/islandora-gis',
       /**
        * We can add pids to the end of this pattern in our preprocess function and templates
        * will be able to have have a pid appended to the template name to overide a template on a per object basis
-       * an example template would be named islandora-basic-image--islandora-27.tpl.phps
+       * an example template would be named islandora-gis--islandora-27.tpl.phps
        */
       'pattern' => 'islandora_gis__',
-      'variables' => array('islandora_object' => NULL),
     ),
   );
 }
@@ -205,7 +206,7 @@ function islandora_gis_layer_load_geoserver($object) {
 function islandora_gis_layer_load_geojson($object) {
 
   $layer_title = $object->label;
-  $layer_name = preg_replace('/\s/', '_', strlower($map_title));
+  $layer_name = preg_replace('/\s/', '_', strtolower($map_title));
 
   $geojson_data = $object['JSON']->content;
   
@@ -237,7 +238,7 @@ function islandora_gis_layer_load_geojson($object) {
 function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 
   $map_title = $object->label;
-  $map_name = preg_replace('/\s/', '_', strlower($map_title));
+  $map_name = preg_replace('/\s/', '_', strtolower($map_title));
   
   if($map_desc_xpath) {
 
@@ -309,6 +310,7 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 		  'mapquest_openaerial' => 'mapquest_openaerial',
 		  'openlayers_geojson_picture_this' => 'openlayers_geojson_picture_this',
 		  );
+  $default_layer = 'openlayers_geojson_picture_this';
 
   $openlayers_maps->data = array(
 				 'width' => 'auto',
