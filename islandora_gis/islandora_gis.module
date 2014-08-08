@@ -107,8 +107,6 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
 
   $map = islandora_gis_map_load($object);
 
-  //$map_output = openlayers_render_map_data($map);
-  //$map_output = openlayers_render_map_data();
   $map_output = islandora_gis_render_map_data($map);
 
   $output = theme('islandora_gis', array('islandora_object' => $object, 'islandora_content' => $map_output));

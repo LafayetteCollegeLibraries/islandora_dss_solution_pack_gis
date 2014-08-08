@@ -73,7 +73,7 @@ function drush_islandora_gis_ingest($file_path, $namespace = NULL, $pid = NULL, 
 
   // For appending the SHP datastream
   $datastreams[] = array('dsid' => 'SHP',
-			 'label' => 'Esri Shapefile (Compressed)',
+			 'label' => $label . ' (Compressed Esri Shapefile)',
 			 'mimetype' => 'application/zip',
 			 'datastream_file' => $shapefile_zip->uri);
 

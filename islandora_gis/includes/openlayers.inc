@@ -26,7 +26,7 @@ function _islandora_gis_layer_load_kml($object) {
   $layer->api_version = 1;
   $layer->name = $layer_name;
   $layer->title = $layer_title;
-  $layer->description = 'A simple example of KML Layer Type.';
+  $layer->description = $layer_title; //@todo Refactor and pass a Dublin Core or MODS XPath text node
   $layer->data = array(
     'method' => 'raw',
     'raw' => $kml_data,
@@ -45,9 +45,6 @@ function _islandora_gis_layer_load_kml($object) {
     'title' => $layer_title, //@todo Resolve by integrating with the class
     'url' => url('islandora/object/' . $object->id . '/datastream/KML/view', array('absolute' => TRUE)) //@todo Refactor
   );
-
-  // @todo Resolve why this is not explicitly added within the scope of openlayers_get_layer_object().
-  //drupal_add_js(drupal_get_path('module', 'openlayers') . '/plugins/layer_types/openlayers_layer_type_kml.js');
 
   return $layer;
 }
@@ -69,20 +66,19 @@ function _islandora_gis_layer_load_geojson($object) {
   $layer->api_version = 1;
   $layer->name = $layer_name;
   $layer->title = $layer_title;
-  $layer->description = t('Example that puts GeoJSON directly in layer without Views.');
+  $layer->description = $layer_title; //@todo Refactor and pass a Dublin Core or MODS XPath text node
   $layer->data = array(
-    'resolutions' => openlayers_get_resolutions('EPSG:900913'),
-    'serverResolutions' => openlayers_get_resolutions('EPSG:4326'),
-    'layer_type' => 'openlayers_layer_type_geojson',
-    'layer_handler' => 'geojson',
-    'projection' => array('EPSG:4326'),
-    'isBaseLayer' => FALSE,
-    'vector' => TRUE,
-    'geojson_data' => $geojson_data,
-    'useBBOX' => FALSE,
-    'title' => $layer_title, //@todo Resolve by integrating with the class
-    'url' => url('islandora/object/' . $object->id . '/datastream/JSON/view', array('absolute' => TRUE)) //@todo Refactor
-  );
+		       'resolutions' => openlayers_get_resolutions('EPSG:900913'),
+		       'serverResolutions' => openlayers_get_resolutions('EPSG:4326'),
+		       'layer_type' => 'openlayers_layer_type_geojson',
+		       'layer_handler' => 'geojson',
+		       'projection' => array('EPSG:4326'),
+		       'isBaseLayer' => FALSE,
+		       'vector' => TRUE,
+		       'geojson_data' => $geojson_data,
+		       'title' => $layer_title, //@todo Resolve by integrating with the class
+		       'url' => url('islandora/object/' . $object->id . '/datastream/JSON/view', array('absolute' => TRUE)) //@todo Refactor
+		       );
 
   return $layer;
 }
@@ -138,7 +134,11 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
     $map_description = $map_title;
   }
 
-  // Example map with MapQuest and GeoJSON
+  /**
+   * Default to the MapQuest OpenStreetMap WFS
+   * @todo Abstract and integrate with the administrative UI for the configuration of default base maps
+   * @todo Integrate with GeoServer for the addition of raster base maps
+   */
   $openlayers_maps = new stdClass();
   $openlayers_maps->disabled = FALSE; /* Edit this to true to make a default openlayers_maps disabled initially */
   $openlayers_maps->api_version = 1;
@@ -194,12 +194,10 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
   $layers = array(
 		  'mapquest_osm' => 'mapquest_osm',
 		  'mapquest_openaerial' => 'mapquest_openaerial',
-		  //'openlayers_geojson_picture_this' => 'openlayers_geojson_picture_this',
-		  //'openlayers_kml_example' => 'openlayers_kml_example',
 		  );
 
   // Load the layer from the Islandora Object
-  $islandora_layer = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'KML'), $object);
+  $islandora_layer = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $object);
 
   $layers['islandora_layer'] = $islandora_layer;
 
@@ -216,15 +214,7 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 				 'behaviors' => $behaviors,
 				 'default_layer' => $default_layer,
 				 'layers' => $layers,
-
-				 /*
-				 'layer_activated' => array(
-							    'islandora_kml' => 'islandora_kml',
-							    ),
-				 */
-
 				 'projection' => 'EPSG:3857',
-				 //'projection' => 'EPSG:4326',
 				 'displayProjection' => 'EPSG:4326',
 				 'styles' => array(
 						   'default' => 'default',

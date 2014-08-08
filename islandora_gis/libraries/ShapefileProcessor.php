@@ -430,7 +430,11 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
     // Submit the POST request to ogre
     //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shp_file_path), $json_file_path);
-    $returnValue = $this->ogr2ogr('-f GeoJSON', $json_file_path, $shp_file_path);
+    /**
+     * ogr2ogr seems to require that vector data sets be reprojected into the EPSG:4326 SRS
+     * Resolves GEO-25
+     */
+    $returnValue = $this->ogr2ogr('-t_srs EPSG:4326', '-f GeoJSON', $json_file_path, $shp_file_path);
 
     $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
 
