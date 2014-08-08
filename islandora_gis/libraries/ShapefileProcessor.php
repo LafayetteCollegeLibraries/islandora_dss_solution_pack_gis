@@ -7,7 +7,6 @@
    */
 
 include 'vendor/autoload.php';
-//require 'Ogre.php';
 
 /**
  * ShapefileProcess Class implements the methods defined in the Islandora GIS Shapefile Content Model
@@ -19,7 +18,6 @@ class ShapefileProcessor {
   const GML_SCHEMA_URI = 'http://schemas.opengis.net/gml/3.2.1/gml.xsd';
   const KML_SCHEMA_URI = 'https://developers.google.com/kml/schema/kml21.xsd';
 
-  private $ogre;
   private $ogr2ogr_bin_path;
 
   /**
@@ -232,6 +230,8 @@ class ShapefileProcessor {
 }
 
 /**
+ * ShapefileObjectProcessor Class
+ * Provides the derivative-generation functionality for Esri Shapefiles
  *
  */
 class ShapefileObjectProcessor extends ShapefileProcessor {
@@ -261,6 +261,11 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     $this->deleteShapefile($this->shp_file_path, $this->object);
   }
 
+  /**
+   * Retrieve the .shp file from the compressed Shapefile
+   * @param string $shape_file_path the file system path to the compressed Shapefile
+   * return string the file path to the .shp file
+   */
   private function getShape($shape_file_path = NULL) {
 
     $dir_path = '/tmp/' . preg_replace('/[\s:]/', '_', $this->object->id);
@@ -282,7 +287,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       $zip->close();
     } else {
 
-      throw new Exception();
+      throw new Exception("Failed to decompress $shape_file_path to the path $shapefile_content_path");
     }
 
     $shp_file_path = array_shift(glob($shapefile_content_path . '/*.[Ss][Hh][Pp]'));
