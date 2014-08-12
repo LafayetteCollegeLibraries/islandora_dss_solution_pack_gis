@@ -188,3 +188,32 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
     }
   }
 }
+
+/**
+ * Implements hook_islandora_xml_form_builder_forms().
+ */
+function islandora_gis_islandora_xml_form_builder_forms() {
+
+  $module_path = drupal_get_path('module', 'islandora_gis');
+  return array(
+	       'Shapefile MODS-OGP form' => array(
+						  'form_file' => "$module_path/xml/islandora_shapefile_mods_form.xml",
+						  ),
+	       );
+}
+
+/**
+ * Implements hook_islandora_content_model_forms_form_associations().
+ *
+ */
+function islandora_gis_islandora_content_model_forms_form_associations() {
+
+  return array('islandora_shapefile_mods_form' => array('content_model' => 'islandora:sp_shapefile_cmodel',
+							'form_name' => 'Shapefile MODS-OGP form',
+							'dsid' => 'MODS',
+							'title_field' => array('titleInfo', 'title'),
+							'transform' => 'mods_to_dc.xsl',
+							'template' => FALSE,
+							),
+	       );
+}

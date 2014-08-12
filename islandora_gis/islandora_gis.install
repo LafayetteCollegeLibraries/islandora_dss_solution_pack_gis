@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * islandora_gis.install
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * @see islandora_gis_islandora_required_objects()
+ */
+function islandora_gis_install() {
+  module_load_include('inc', 'islandora', 'includes/solution_packs');
+  islandora_install_solution_pack('islandora_gis');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function islandora_gis_uninstall() {
+  module_load_include('inc', 'islandora', 'includes/solution_packs');
+  islandora_install_solution_pack('islandora_gis', 'uninstall');
+}
