@@ -24,11 +24,13 @@ class ShapefileObjectProcessorTest extends PHPUnit_Framework_TestCase {
 
     $this->shape_file_path = $shape_file_path;
 
-    $this->processor = new ShapefileObjectProcessor($this->object, $this->shape_file_path);
+    // This assumes that the Module has been properly installed (i. e. that the proper Node.js dependencies are present)
+    $this->processor = new ShapefileObjectProcessor($this->object, $this->shape_file_path, '/usr/bin/env ogr2ogr', dirname(__DIR__) . '/js/node_modules/topojson/bin/topojson');
 
     $this->gml_file = '/tmp/gis_testObject_SHP/GlendaleAZ_Council_Districts.gml.xml';
     $this->kml_file = '/tmp/gis_testObject_SHP/GlendaleAZ_Council_Districts.kml.xml';
-    $this->geo_json_file = '/tmp/gis_testObject_SHP/GlendaleAZ_Council_Districts.geojson.json';
+    $this->geo_json_file = dirname(__DIR__) . '/tests/fixtures/test.geojson.json';
+    $this->topo_json_file = dirname(__DIR__) . '/tests/fixtures/test.topojson.json';
   }
 
   /**
@@ -37,7 +39,6 @@ class ShapefileObjectProcessorTest extends PHPUnit_Framework_TestCase {
   public function testDeriveGml() {
 
     $output = $this->processor->deriveGml();
-    //$this->assertNotEquals('', $output);
     $this->assertFileEquals($this->gml_file, $output);
   }
 
@@ -47,7 +48,6 @@ class ShapefileObjectProcessorTest extends PHPUnit_Framework_TestCase {
   public function testDeriveKml() {
 
     $output = $this->processor->deriveKml();
-    //$this->assertNotEquals('', $output);
     $this->assertFileEquals($this->kml_file, $output);
   }
 
@@ -56,9 +56,14 @@ class ShapefileObjectProcessorTest extends PHPUnit_Framework_TestCase {
    */
   public function testDeriveJson() {
 
-    $output = $this->processor->deriveJson();
-    //$this->assertNotEquals('', $output);
+    $output = $this->processor->deriveJson(TRUE);
     $this->assertFileEquals($this->geo_json_file, $output);
+  }
+
+  public function testDeriveTopoJson() {
+
+    $output = $this->processor->deriveJson();
+    $this->assertFileEquals($this->topo_json_file, $output);
   }
 
   /**
@@ -70,14 +75,6 @@ class ShapefileObjectProcessorTest extends PHPUnit_Framework_TestCase {
     foreach(array('GML', 'KML', 'JSON') as $ds_id) {
 
       $this->assertNotEquals(NULL, $this->processor->derive($ds_id));
-    }
-  }
-
-  protected function tearDown() {
-
-    if(file_exists($this->geo_json_file)) {
-
-      unlink($this->geo_json_file);
     }
   }
 }

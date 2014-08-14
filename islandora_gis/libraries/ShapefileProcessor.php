@@ -22,13 +22,19 @@ class ShapefileProcessor {
 
   /**
    * Constructor
-   * @param string $ogreUri The URI for the ogre Node.js app.
    * @param string $ogr2ogr_bin_path The path to the ogr2ogr binary
+   * @param string $topojson_bin_path The path to the topojson command-line interface
    *
    */
-  public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+  public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr', $topojson_bin_path = 'js/node_modules/topojson/bin/topojson') {
 
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
+
+    if(!file_exists($topojson_bin_path)) {
+
+      $topojson_bin_path = dirname(__DIR__) . '/' . $topojson_bin_path;
+    }
+    $this->topojson_bin_path = $topojson_bin_path;
 
     // Get the schema and data as objects
     $this->json_schema_retriever = new JsonSchema\Uri\UriRetriever;
@@ -106,6 +112,25 @@ class ShapefileProcessor {
     $returnValue = FALSE;
 
     $invocation = $this->ogr2ogr_bin_path . ' ' . implode(' ', $args);
+
+    $returnValue = exec(escapeshellcmd($invocation));
+
+    return $returnValue;
+  }
+
+  /**
+   * Invoke the topojson command-line interface within the local environment
+   *
+   * @return string The resulting value of the command-line invocation
+   * @access private
+   *
+   */
+  protected function topojson() {
+
+    $args = func_get_args();
+    $returnValue = FALSE;
+
+    $invocation = $this->topojson_bin_path . ' ' . implode(' ', $args);
 
     $returnValue = exec(escapeshellcmd($invocation));
 
@@ -243,13 +268,13 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
    * Constructor
    *
    */
-  public function __construct($object, $shape_file_path = NULL, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr') {
+  public function __construct($object, $shape_file_path = NULL, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr', $topojson_bin_path = 'js/node_modules/topojson/bin/topojson') {
 
     $this->object = $object;
     $this->shape_file_path = isset($shape_file_path) ? $shape_file_path : $this->getShapefile($object);
     $this->shp_file_path = $this->getShape();
 
-    parent::__construct($ogr2ogr_bin_path);
+    parent::__construct($ogr2ogr_bin_path, $topojson_bin_path);
   }
 
   /**
@@ -416,25 +441,47 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     }
   }
 
-  /**
-   * Generate a GeoJSON Object from the .shp File
+  /*
+   * Generate a TopoJSON Object from the .shp File
    *
-   * @return string The cURL session results from the POST request to ogre
+   * @return string the TopoJSON Object
    */
-  public function deriveJson() {
+  public function deriveTopoJson() {
 
     $shp_file_path = $this->shp_file_path;
 
     // Construct the file path for the GeoJSON Object
     $json_file_path = preg_replace('/\.shp$/', ".geojson.json", $shp_file_path);
 
-    // Submit the POST request to ogre
-    //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shp_file_path), $json_file_path);
-    /**
-     * ogr2ogr seems to require that vector data sets be reprojected into the EPSG:4326 SRS
-     * Resolves GEO-25
-     */
-    $returnValue = $this->ogr2ogr('-t_srs EPSG:4326', '-f GeoJSON', $json_file_path, $shp_file_path);
+    $returnValue = $this->topojson("-o $json_file_path", $shp_file_path);
+  }
+
+  /**
+   * Generate a GeoJSON Object from the .shp File
+   *
+   * @return string The cURL session results from the POST request to ogre
+   */
+  public function deriveJson($force_geo_json = FALSE) {
+
+    $shp_file_path = $this->shp_file_path;
+
+    // Construct the file path for the GeoJSON Object
+    $json_file_path = preg_replace('/\.shp$/', ".geojson.json", $shp_file_path);
+
+    // Attempt to generate the derivative as a TopoJSON Object
+    if(!$force_geo_json and isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
+
+      $returnValue = $this->deriveTopoJson();
+    } else {
+
+      // Submit the POST request to ogre
+      //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shp_file_path), $json_file_path);
+      /**
+       * ogr2ogr seems to require that vector data sets be reprojected into the EPSG:4326 SRS
+       * Resolves GEO-25
+       */
+      $returnValue = $this->ogr2ogr('-t_srs EPSG:4326', '-f GeoJSON', $json_file_path, $shp_file_path);
+    }
 
     $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
 
