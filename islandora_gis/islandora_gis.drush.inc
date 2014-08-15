@@ -56,9 +56,18 @@ function islandora_gis_drush_command() {
  * @param string $file_path The file system path to the compressed Esri Shapefile
  *
  */
-function drush_islandora_gis_ingest($file_path, $namespace = NULL, $pid = NULL, $label = 'New Shapefile Object', $collections = array('islandora:sp_shapefile_collection')) {
+function drush_islandora_gis_ingest($path, $namespace = NULL, $pid = NULL, $label = 'New Shapefile Object', $collections = array('islandora:sp_shapefile_collection'), $fgdc_xml_path = NULL) {
 
   module_load_include('inc', 'islandora', 'includes/utilities');
+
+  if(is_dir($path)) {
+
+    $file_path = '';
+    $fgdc_xml_path = '';
+  } else {
+
+    $file_path = $path;
+  }
 
   $shapefile_zip = file_save_data(file_get_contents($file_path), 'temporary://islandora_gis_shapefile_' . basename($file_path));
 
@@ -77,6 +86,17 @@ function drush_islandora_gis_ingest($file_path, $namespace = NULL, $pid = NULL, 
 			 'mimetype' => 'application/zip',
 			 'datastream_file' => $shapefile_zip->uri);
 
+  // For appending the FGDC datastream
+  if(isset($fgdc_xml_path)) {
+
+    $fgdc_xml = file_save_data(file_get_contents($fgdc_xml_path), 'temporary://islandora_gis_shapefile_fgdc' . basename($fgdc_xml_path));
+
+    // For appending the FGDC datastream
+    $datastreams[] = array('dsid' => 'FGDC',
+			   'label' => 'FGDC Document for ' . $label,
+			   'datastream_file' => $fgdc_xml->uri);
+  }
+    
   $content_models = array();
 
   // Set the Content Model
@@ -98,9 +118,15 @@ function drush_islandora_gis_ingest($file_path, $namespace = NULL, $pid = NULL, 
     drush_log(dt($shapefile_zip->uri . " could not be ingested:" . $e->getMessage()), 'error');
   }
 
-  // Delete the file
+  // Delete the compressed Shapefile
   if(!file_delete($shapefile_zip)) {
 
     drush_log(dt($shapefile_zip->uri . " could not be deleted."), 'warning');
+  }
+
+  // Delete the FGDC Document file
+  if(isset($fgdc_xml_path) and !file_delete($fgdc_xml)) {
+
+    drush_log(dt($fgdc_xml->uri . " could not be deleted."), 'warning');
   }
 }
