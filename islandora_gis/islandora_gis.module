@@ -9,6 +9,7 @@
 $module_path = drupal_get_path('module', 'islandora_gis');
 @include_once "$module_path/vendor/autoload.php";
 @include_once "$module_path/libraries/ShapefileProcessor.php";
+@include_once "$module_path/libraries/FgdcProcessor.php";
 
   /**
    * Implements hook_islandora_required_objects().
@@ -193,9 +194,28 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 
   // For the FGDC metadata transformation
   $fgdc_ds = $object['FGDC'];
+  if(isset($fgdc_ds)) {
+    
+    $xsl_file_path = dirname(__DIR__) . '/islandora_gis/libraries/xsl/fgdc2mods.xsl';
+    $processor = new FgdcDatastreamProcessor($fgdc_ds, $xsl_file_path);
+    $mods_file = $processor->transform();
 
-  //$saxon_bin_path = dirname(__DIR__) . 'islandora_gis/libraries/bin/xsltproc-saxon';
-  $processor = new FgdcDatastreamProcessor($fgdc_ds);
+    // @see islandora_prepare_new_object().
+    $datastream = $object->constructDatastream('MODS', 'X');
+    $datastream->label = 'MODS Document';
+    $datastream->mimetype = 'application/xml';
+    $datastream->setContentFromFile($mods_file);
+    try {
+
+      $object->ingestDatastream($datastream);
+    } catch (Exception $e) {
+      
+      watchdog('islandora_gis', $e->getMessage(), NULL, WATCHDOG_ERROR);
+      drupal_set_message(t('A problem occured while ingesting the datastream "@label" for @pid, please notify the administrator.', array('@label' => $label, '@pid' => $object->id)), 'error');
+    }
+
+    file_unmanaged_delete($mods_file);
+  }
 }
 
 /**

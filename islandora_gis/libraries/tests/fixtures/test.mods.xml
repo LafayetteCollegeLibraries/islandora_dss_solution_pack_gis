@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" version="3.4" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+   <titleInfo>
+      <title>PennDOT - Pennsylvania County Boundaries </title>
+   </titleInfo>
+   <name>
+      <namePart>Pennsylvania Department of Transportation, Bureau of Planning and Research, Cartographic Information Division</namePart>
+      <role>
+         <roleTerm type="text" authority="marcrelator">creator</roleTerm>
+      </role>
+   </name>
+   <typeOfResource>cartographic</typeOfResource>
+   <typeOfResource>software, multimedia</typeOfResource>
+   <genre authority="lcgft" valueURI="http://id.loc.gov/authorities/genreForms/gf2011026297">Geospatial data</genre>
+   <genre authority="rdacontent" valueURI="http://rdvocab.info/termList/RDAContentType/1001">cartographic dataset</genre>
+   <originInfo>
+      <publisher>Pennsylvania Department of Transportation</publisher>
+      <place>
+         <placeTerm type="text">Harrisburg, PA</placeTerm>
+      </place>
+      <dateIssued encoding="w3cdtf" keyDate="yes">2014</dateIssued>
+      <dateValid encoding="w3cdtf">2014</dateValid>
+   </originInfo>
+   <language>
+      <languageTerm authority="iso639-2b">eng</languageTerm>
+   </language>
+   <physicalDescription>
+      <form>ArcView Shapefile</form>
+      <extent>1.385</extent>
+      <digitalOrigin>born digital</digitalOrigin>
+   </physicalDescription>
+   <subject>
+      <cartographics>
+         <scale>1:24000</scale>
+         <coordinates>
+-80.519350 -- 
+-74.689580/
+42.269480 -- 
+39.719860</coordinates>
+      </cartographics>
+   </subject>
+   <abstract displayLabel="Abstract" lang="eng">County boundaries within Pennsylvania as delineated for the PennDOT Type 10 general highway map.</abstract>
+   <abstract displayLabel="Purpose" lang="eng">Public information and support for transportation planning, design and development.</abstract>
+   <subject>
+      <geographic authority="None" lang="eng">Pennsylvania</geographic>
+   </subject>
+   <subject>
+      <temporal encoding="w3cdtf">2014</temporal>
+   </subject>
+   <subject>
+      <topic authority="ISO19115TopicCategory" authorityURI="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_TopicCategoryCode" valueURI="boundaries">Boundaries</topic>
+   </subject>
+   <subject>
+      <topic authority="ISO19115TopicCategory" authorityURI="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_TopicCategoryCode"/>
+   </subject>
+   <accessCondition type="restriction on access">None.</accessCondition>
+   <accessCondition type="use and reproduction">The user shall indemnify, save harmless, and, if requested, defend the COMMONWEALTH, their officers, agents, and employees from and against any suits, claims, or actions for injury, death, or property damage arising out of the use of or any defect in the FILES or any accompanying documentation.
+
+The COMMONWEALTH excludes any and all implied warranties, including warranties or merchantability and fitness for a particular purpose.
+
+The COMMONWEALTH makes no warranty or representation, either express or implied, with respect to the FILES or accompanying documentation, including its quality, performance, merchantability, or fitness for a particular purpose. The FILES and documentation are provided "as is" and the USER assumes the entire risk as to its quality and performance.
+
+The COMMONWEALTH will not be liable for any direct, indirect, special, incidental, or consequential damages arising out of the use or inability to use the FILES or any accompanying documentation.
+
+The USER is granted permission to translate and add value to the FILES for the use of the FILES on its computer hardware; provided, however, that the USER annually notify the UNIVERSITY / COMMONWEALTH of any customizing or value-adding work done.
+
+Any customized or value added versions of the files will contain the following disclaimer:
+
+THIS IS NOT A PENNSYLVANIA DEPARTMENT OF TRANSPORTATION APPROVED FILE. THE DEPARTMENT OF TRANSPORTATION RETAINS THE MASTER FILES.
+
+THE USER AGREES AND UNDERSTANDS THAT IT MAY NOT FURTHER DISTRIBUTE THE FILES TO A THIRD PARTY.
+
+If you have any questions or problems, contact the ORGANIZATION where you acquired the data.</accessCondition>
+   <recordInfo>
+      <recordContentSource/>
+      <recordIdentifier/>
+      <recordOrigin>This record was translated from FGDC Content Standards for Digital Geospatial Metadata to MODS v.3 using an xsl transformation.</recordOrigin>
+      <languageOfCataloging>
+         <languageTerm authority="iso639-2b" type="code">eng</languageTerm>
+      </languageOfCataloging>
+   </recordInfo>
+   <extension xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" displayLabel="geo">
+      <rdf:RDF xmlns:gml="http://www.opengis.net/gml/3.2/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+         <rdf:Description rdf:about="">
+            <dc:format>application/x-esri-shapefile</dc:format>
+            <dc:type>Dataset#Polygon</dc:type>
+            <gml:boundedBy>
+               <gml:Envelope gml:srsName="EPSG:4326">
+                  <gml:lowerCorner>
+-80.519350 
+39.719860</gml:lowerCorner>
+                  <gml:upperCorner>
+-74.689580 
+42.269480</gml:upperCorner>
+               </gml:Envelope>
+            </gml:boundedBy>
+         </rdf:Description>
+      </rdf:RDF>
+   </extension>
+</mods>

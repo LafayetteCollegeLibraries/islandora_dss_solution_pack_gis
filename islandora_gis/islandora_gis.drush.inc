@@ -60,10 +60,11 @@ function drush_islandora_gis_ingest($path, $namespace = NULL, $pid = NULL, $labe
 
   module_load_include('inc', 'islandora', 'includes/utilities');
 
+  // If the ingestion is being performed from a directory, parse the contents
   if(is_dir($path)) {
 
-    $file_path = '';
-    $fgdc_xml_path = '';
+    $file_path = array_shift(glob("$path/*.zip"));
+    $fgdc_xml_path = array_shift(glob("$path/*.xml"));
   } else {
 
     $file_path = $path;
@@ -94,6 +95,8 @@ function drush_islandora_gis_ingest($path, $namespace = NULL, $pid = NULL, $labe
     // For appending the FGDC datastream
     $datastreams[] = array('dsid' => 'FGDC',
 			   'label' => 'FGDC Document for ' . $label,
+			   'mimetype' => 'application/xml',
+			   'control_group' => 'X',
 			   'datastream_file' => $fgdc_xml->uri);
   }
     
