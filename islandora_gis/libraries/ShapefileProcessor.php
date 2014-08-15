@@ -20,21 +20,43 @@ class ShapefileProcessor {
 
   private $ogr2ogr_bin_path;
 
+  const DOUGLAS_PEUCKER = 'rdp';
+  const VISVALINGAM = 'visvalingam';
+
+  // Overriding this in order to resolve issues with mapshaper
+  //protected $simplify = '10%';
+  protected $simplify_method = VISVALINGAM;
+  //protected $quantization = TRUE;
+
+  // For topojson
+  //protected $simplify = '7e-9';
+  protected $simplify = FALSE;
+  //protected $quantization = '1e5';
+  protected $quantization = FALSE;
+
   /**
    * Constructor
    * @param string $ogr2ogr_bin_path The path to the ogr2ogr binary
    * @param string $topojson_bin_path The path to the topojson command-line interface
    *
    */
-  public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr', $topojson_bin_path = 'js/node_modules/topojson/bin/topojson') {
+  public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr',
+			      $topojson_bin_path = 'js/node_modules/topojson/bin/topojson',
+			      $mapshaper_bin_path = 'js/node_modules/mapshaper/bin/mapshaper',
+			      $mapshaper_arguments = array()) {
 
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
-
-    if(!file_exists($topojson_bin_path)) {
-
-      $topojson_bin_path = dirname(__DIR__) . '/' . $topojson_bin_path;
-    }
     $this->topojson_bin_path = $topojson_bin_path;
+    $this->mapshaper_bin_path = $mapshaper_bin_path;
+
+    // Set the arguments for mapshaper
+    foreach($mapshaper_arguments as $key => $value) {
+      
+      if(object_has_property($this, $key)) {
+
+	$this->$key = $value;
+      }
+    }
 
     // Get the schema and data as objects
     $this->json_schema_retriever = new JsonSchema\Uri\UriRetriever;
@@ -131,6 +153,27 @@ class ShapefileProcessor {
     $returnValue = FALSE;
 
     $invocation = $this->topojson_bin_path . ' ' . implode(' ', $args);
+
+    $returnValue = exec(escapeshellcmd($invocation));
+
+    return $returnValue;
+  }
+
+  /**
+   * Invoke the mapshaper command-line interface within the local environment
+   *
+   * @return string The resulting value of the command-line invocation
+   * @access private
+   *
+   */
+  protected function mapshaper() {
+
+    $args = func_get_args();
+    $returnValue = FALSE;
+
+    $invocation = $this->mapshaper_bin_path . ' ' . implode(' ', $args);
+
+    print $invocation;
 
     $returnValue = exec(escapeshellcmd($invocation));
 
@@ -268,13 +311,17 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
    * Constructor
    *
    */
-  public function __construct($object, $shape_file_path = NULL, $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr', $topojson_bin_path = 'js/node_modules/topojson/bin/topojson') {
+  public function __construct($object, $shape_file_path = NULL,
+			      $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr',
+			      $topojson_bin_path = 'js/node_modules/topojson/bin/topojson',
+			      $mapshaper_bin_path = 'js/node_modules/mapshaper/bin/mapshaper',
+			      $mapshaper_arguments = array()) {
 
     $this->object = $object;
     $this->shape_file_path = isset($shape_file_path) ? $shape_file_path : $this->getShapefile($object);
     $this->shp_file_path = $this->getShape();
 
-    parent::__construct($ogr2ogr_bin_path, $topojson_bin_path);
+    parent::__construct($ogr2ogr_bin_path, $topojson_bin_path, $mapshaper_bin_path);
   }
 
   /**
@@ -453,7 +500,60 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     // Construct the file path for the GeoJSON Object
     $json_file_path = preg_replace('/\.shp$/', ".geojson.json", $shp_file_path);
 
-    $returnValue = $this->topojson("-o $json_file_path", $shp_file_path);
+    // Determine whether to generate the TopoJSON using topojson or mapshaper
+    if(isset($this->mapshaper_bin_path) and file_exists($this->mapshaper_bin_path)) {
+
+      $mapshaper_args = array($shp_file_path, "-o $json_file_path", 'format=topojson');
+
+      // For handling simplification...
+      if($this->simplify) {
+
+	$simplify_args = array();
+	$simplify_args[] = "-simplify";
+
+	if($this->simplify_method != VISVALINGAM) {
+
+	  $simplify_args[] = $this->simplify_method;
+	}
+
+	$simplify_args[] = $this->simplify;
+	$mapshaper_args[] = implode(' ' , $simplify_args);
+      }
+      
+      // For handling quantization...
+      if($this->quantization) {
+
+	if(gettype($this->quantization) == 'int') {
+
+	  $mapshaper_args[] = "quantization={$this->quantization}";
+	}
+      } else {
+
+	$mapshaper_args[] = "no-quantization";
+      }
+
+      //$returnValue = $this->mapshaper(implode(' ', $mapshaper_args));
+      $returnValue = call_user_func_array(array($this, 'mapshaper'), $mapshaper_args);
+    } else {
+
+      $topojson_args = array("-o $json_file_path", $shp_file_path);
+
+      // @todo Extend
+      if($this->simplify) {
+
+	$topojson_args[] = "-s {$this->simplify}";
+      }
+
+      if($this->quantization) {
+
+	$topojson_args[] = "-q {$this->quantization}";
+      }
+
+      //$returnValue = $this->topojson("-o $json_file_path", $shp_file_path);
+      $returnValue = call_user_func_array(array($this, 'topojson'), $topojson_args);
+    }
+
+    return $returnValue;
   }
 
   /**

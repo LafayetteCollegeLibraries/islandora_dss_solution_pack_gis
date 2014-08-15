@@ -122,8 +122,15 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 
   $ogr2ogr_bin_path = variable_get('islandora_gis_ogr2ogr_path', '/usr/bin/env ogr2ogr');
   //$topojson_bin_path = drupal_get_path('module', 'islandora_gis') . '/libraries/js/node_modules/topojson/bin/topojson';
-  $topojson_bin_path = dirname(__DIR__) . 'islandora_gis/libraries/js/node_modules/topojson/bin/topojson';
-  $processor = new ShapefileObjectProcessor($object, NULL, $ogr2ogr_bin_path, $topojson_bin_path, $saxon_bin_path);
+  $topojson_bin_path = dirname(__DIR__) . '/islandora_gis/libraries/js/node_modules/topojson/bin/topojson';
+
+  /**
+   * Temporarily disabling integration with mapshaper due to issue GEO-37
+   *
+   */
+  //$mapshaper_bin_path = dirname(__DIR__) . '/islandora_gis/libraries/js/node_modules/mapshaper/bin/mapshaper';
+  //$processor = new ShapefileObjectProcessor($object, NULL, $ogr2ogr_bin_path, $topojson_bin_path, $mapshaper_bin_path);
+  $processor = new ShapefileObjectProcessor($object, NULL, $ogr2ogr_bin_path, $topojson_bin_path);
 
   // Manually invoke the ShapefileProcessor methods for non-existent derivative datastreams
   foreach(array('GML' => 'Geography Markup Language',
