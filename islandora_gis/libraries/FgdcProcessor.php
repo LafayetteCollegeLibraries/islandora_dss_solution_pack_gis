@@ -17,8 +17,8 @@ class FgdcProcessor {
   const FGDC_SCHEMA_URI = 'https://www.fgdc.gov/schemas/metadata/fgdc-std-001-1998.xsd';
   const MODS_SCHEMA_URI = 'http://www.loc.gov/standards/mods/v3/mods-3-5.xsd';
 
-  private $xsltproc_bin_path;
-  private $xsl_file_path;
+  protected $xsltproc_bin_path;
+  protected $xsl_file_path;
 
   /**
    * Constructor
@@ -125,5 +125,80 @@ class FgdcProcessor {
 
       return $returnValue;
     }
+  }
+}
+
+/**
+ * Class FgdcDatastreamProcessor for transforming FGDC Datastreams
+ *
+ */
+class FgdcDatastreamProcessor extends FgdcProcessor {
+
+  private $fgdc_ds;
+
+  /**
+   * Constructor
+   * @param string $xsltproc_bin_path The path to BASH wrapper script for the Saxon XSLT processor
+   *
+   */
+  public function __construct($fgdc_ds, $xsl_file_path = 'xsl/fgdc2mods.xsl', $xsltproc_bin_path = '/usr/bin/java -jar /usr/share/java/saxon.jar') {
+
+    $this->fgdc_ds = $fgdc_ds;
+    parent::__construct($xsl_file_path, $xsltproc_bin_path);
+  }
+
+  /**
+   * Download and retrieve the path to the FGDC file
+   * @param FedoraDatastream $ds
+   * @returns string the file system path to the FGDC file
+   *
+   */
+  private static function getFgdcFile($ds) {
+
+    // Retrieve the compressed Shapefile from Islandora
+    $dir_path = '/tmp/' . preg_replace('/[\s:]/', '_', $ds->id);
+    $file_path = $dir_path . '.fgdc.xml';
+    $file = fopen($file_path, 'wb');
+
+    fwrite($file, $ds->content);
+    fclose($file);
+
+    return $file_path;
+  }
+
+  /**
+   * Transform the FGDC Document into the MODS
+   *
+   * @param type $file_ext
+   * @return The transformed MODS Document
+   */
+  public function transform($file_ext = 'mods.xml') {
+
+    // Retrieve the FGDC file
+    $fgdc_file_path = self::getFgdcFile($this->fgdc_ds);
+
+    // Ensure that the FGDC is valid...
+    /**
+     * Fails: DOMDocument::schemaValidate(): Element 'caldate': 'unknown' is not a valid value of the union type 'caldateType'.
+     * @todo Identify and resolve
+     *
+     */
+    //$this->validate($fgdc_file_path, self::FGDC_SCHEMA_URI);
+    if(!$this->is_fgdc_doc($fgdc_file_path)) {
+
+      throw new Exception("$fgdc_file_path is not a valid FGDC Document.");
+    }
+
+    // Construct the file path for the MODS Document
+    $mods_file_path = preg_replace('/(.+?)\..+?\.xml$/', "\\1.$file_ext", $fgdc_file_path);
+
+    // Perform the transformation
+    $returnValue = $this->xsltproc('-o ' . $mods_file_path, $fgdc_file_path, $this->xsl_file_path);
+
+    // Validate the MODS against the schema
+    $this->validate($mods_file_path, self::MODS_SCHEMA_URI);
+
+    unlink($fgdc_file_path);
+    return $mods_file_path;
   }
 }
