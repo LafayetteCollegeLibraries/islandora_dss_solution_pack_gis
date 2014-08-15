@@ -10,6 +10,7 @@
     <mimetypes>
         <type>application/zip</type>
 	<type>application/msaccess</type>
+	<type>application/xml</type><!-- Disambiguation for non-FGDC Datastreams must lie within the FgdcProcessor::transform() -->
     </mimetypes>
     <ingest_rules>
         <rule>
@@ -25,11 +26,17 @@
 			     file="includes/ShapefileProcessor.php" method="deriveJson"
 			     modified_files_ext="geojson.json" module="islandora_gis"/>
             </ingest_methods>
-            <applies_to>application/msaccess</applies_to><!-- The ingestion rule for GEODB Datastream -->
+            <applies_to>application/msaccess</applies_to><!-- The ingestion rule for GEODB Datastream --><!-- @todo Delete this -->
             <ingest_methods>
               <ingest_method class="ShapefileProcessor" dsid="JSON"
 			     file="includes/ShapefileProcessor.php" method="deriveTopoJson"
 			     modified_files_ext="topojson.json" module="islandora_gis"/>
+            </ingest_methods>
+            <applies_to>application/xml</applies_to><!-- The ingestion rule for MODS Datastream -->
+            <ingest_methods>
+              <ingest_method class="FgdcProcessor" dsid="MODS"
+			     file="libraries/FgdcProcessor.php" method="transform"
+			     modified_files_ext="mods.xml" module="islandora_gis"/>
             </ingest_methods>
         </rule>
     </ingest_rules>

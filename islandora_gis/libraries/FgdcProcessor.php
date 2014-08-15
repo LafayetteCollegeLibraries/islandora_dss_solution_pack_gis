@@ -14,17 +14,20 @@ include 'vendor/autoload.php';
  */
 class FgdcProcessor {
 
-  const FGDC_SCHEMA_URI = 'http://schemas.opengis.net/gml/3.2.1/gml.xsd';
+  const FGDC_SCHEMA_URI = 'https://www.fgdc.gov/schemas/metadata/fgdc-std-001-1998.xsd';
   const MODS_SCHEMA_URI = 'http://www.loc.gov/standards/mods/v3/mods-3-5.xsd';
+
   private $xsltproc_bin_path;
+  private $xsl_file_path;
 
   /**
    * Constructor
    * @param string $xsltproc_bin_path The path to BASH wrapper script for the Saxon XSLT processor
    *
    */
-  public function __construct($xsltproc_bin_path = 'bin/xsltproc-saxon') {
+  public function __construct($xsl_file_path = 'xsl/fgdc2mods.xsl', $xsltproc_bin_path = '/usr/bin/java -jar /usr/share/java/saxon.jar') {
 
+    $this->xsl_file_path = $xsl_file_path;
     $this->xsltproc_bin_path = $xsltproc_bin_path;
   }
 
@@ -37,12 +40,29 @@ class FgdcProcessor {
    * @access private
    *
    */
-  protected function validateXml($doc_file_path, $doc_schema_uri) {
+  protected function validate($doc_file_path, $doc_schema_uri) {
 
     $doc = new DOMDocument();
     $doc->load($doc_file_path);
 
     return $doc->schemaValidate($doc_schema_uri);
+  }
+
+  /**
+   * Placeholder method implemented to ensure that this is a well-formed FGDC Document being transformed
+   * @todo Resolve by ensuring that the FGDC Document is validated against the XSD
+   *
+   * @param string $doc_file_path The file path to the XML Document being validated
+   * @return string The results of the validation
+   * @access private
+   *
+   */
+  protected function is_fgdc_doc($doc_file_path) {
+
+    $doc = simplexml_load_file($doc_file_path);
+    
+    // Ensure that both the <idinfo> and <metainfo> occur once within the Document
+    return isset($doc->idinfo) and isset($doc->metainfo);
   }
 
   /**
@@ -69,19 +89,31 @@ class FgdcProcessor {
    *
    * @param type $parameterArray
    * @param type $dsid
-   * @param type $file
+   * @param type $fgdc_file_path
    * @param type $file_ext
    * @return The transformed MODS Document
    */
   public function transform($parameterArray = NULL, $dsid, $fgdc_file_path, $file_ext) {
 
+    // Ensure that the FGDC is valid...
+    /**
+     * Fails: DOMDocument::schemaValidate(): Element 'caldate': 'unknown' is not a valid value of the union type 'caldateType'.
+     * @todo Identify and resolve
+     *
+     */
+    //$this->validate($fgdc_file_path, self::FGDC_SCHEMA_URI);
+    if(!$this->is_fgdc_doc($fgdc_file_path)) {
+
+      throw new Exception("$fgdc_file_path is not a valid FGDC Document.");
+    }
+
     // Construct the file path for the MODS Document
-    $mods_file_path = preg_replace('/(.+?)\..+?\.xml$/', "\1.$file_ext", $fgdc_file_path);
+    $mods_file_path = preg_replace('/(.+?)\..+?\.xml$/', "\\1.$file_ext", $fgdc_file_path);
 
     // Perform the transformation
-    $returnValue = $this->xsltproc('-o ' . $mods_file_path, $xsl_file_path, $fgdc_file_path);
+    $returnValue = $this->xsltproc('-o ' . $mods_file_path, $fgdc_file_path, $this->xsl_file_path);
 
-    // Validate against the schema
+    // Validate the MODS against the schema
     $this->validate($mods_file_path, self::MODS_SCHEMA_URI);
 
     if ($returnValue == '0') {
