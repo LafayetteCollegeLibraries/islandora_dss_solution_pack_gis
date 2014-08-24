@@ -20,19 +20,32 @@ class ShapefileProcessor {
 
   private $ogr2ogr_bin_path;
 
+  // Overriding this in order to resolve issues with mapshaper
+  //protected $simplify = '10%';
+
+  protected $simplify_method = 'visvalingam';
+
   const DOUGLAS_PEUCKER = 'rdp';
   const VISVALINGAM = 'visvalingam';
 
-  // Overriding this in order to resolve issues with mapshaper
-  //protected $simplify = '10%';
-  protected $simplify_method = VISVALINGAM;
   //protected $quantization = TRUE;
 
   // For topojson
-  //protected $simplify = '7e-9';
-  protected $simplify = FALSE;
+  protected $simplify = '7e-10';
   //protected $quantization = '1e5';
   protected $quantization = FALSE;
+
+  // Please see http://php.net/manual/en/function.rmdir.php#114183
+  public static function delTree($dir) {
+
+    $files = array_diff(scandir($dir), array('.','..'));
+
+    foreach ($files as $file) {
+
+      (is_dir("$dir/$file") && !is_link($dir)) ? delTree("$dir/$file") : unlink("$dir/$file");
+    }
+    return rmdir($dir);
+  } 
 
   /**
    * Constructor
@@ -42,11 +55,13 @@ class ShapefileProcessor {
    */
   public function __construct($ogr2ogr_bin_path = '/usr/bin/env ogr2ogr',
 			      $topojson_bin_path = 'js/node_modules/topojson/bin/topojson',
+			      $geojson_bin_path = 'js/node_modules/topojson/bin/topojson-geojson',
 			      $mapshaper_bin_path = 'js/node_modules/mapshaper/bin/mapshaper',
 			      $mapshaper_arguments = array()) {
 
     $this->ogr2ogr_bin_path = $ogr2ogr_bin_path;
     $this->topojson_bin_path = $topojson_bin_path;
+    $this->geojson_bin_path = $geojson_bin_path;
     $this->mapshaper_bin_path = $mapshaper_bin_path;
 
     // Set the arguments for mapshaper
@@ -160,6 +175,25 @@ class ShapefileProcessor {
   }
 
   /**
+   * Invoke the geojson command-line interface within the local environment
+   *
+   * @return string The resulting value of the command-line invocation
+   * @access private
+   *
+   */
+  protected function geojson() {
+
+    $args = func_get_args();
+    $returnValue = FALSE;
+
+    $invocation = $this->geojson_bin_path . ' ' . implode(' ', $args);
+
+    $returnValue = exec(escapeshellcmd($invocation));
+
+    return $returnValue;
+  }
+
+  /**
    * Invoke the mapshaper command-line interface within the local environment
    *
    * @return string The resulting value of the command-line invocation
@@ -173,9 +207,20 @@ class ShapefileProcessor {
 
     $invocation = $this->mapshaper_bin_path . ' ' . implode(' ', $args);
 
-    print $invocation;
-
     $returnValue = exec(escapeshellcmd($invocation));
+
+    return $returnValue;
+  }
+
+  /**
+   * Method for simplifying derivatives
+   * @param string $dsid The ID of the Datastream managing the derivative
+   * @todo Fully implement
+   *
+   */
+  protected function simplify($dsid) {
+
+    $returnValue = FALSE;
 
     return $returnValue;
   }
@@ -306,6 +351,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
   private $object;
   private $shape_file_path;
+  private $gml_file_path;
+  private $kml_file_path;
+  private $json_file_path;
 
   /**
    * Constructor
@@ -314,14 +362,15 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
   public function __construct($object, $shape_file_path = NULL,
 			      $ogr2ogr_bin_path = '/usr/bin/env ogr2ogr',
 			      $topojson_bin_path = 'js/node_modules/topojson/bin/topojson',
+			      $geojson_bin_path = 'js/node_modules/topojson/bin/topojson-geojson',
 			      $mapshaper_bin_path = 'js/node_modules/mapshaper/bin/mapshaper',
 			      $mapshaper_arguments = array()) {
 
-    $this->object = $object;
+    $this->object = $object;    
     $this->shape_file_path = isset($shape_file_path) ? $shape_file_path : $this->getShapefile($object);
     $this->shp_file_path = $this->getShape();
 
-    parent::__construct($ogr2ogr_bin_path, $topojson_bin_path, $mapshaper_bin_path);
+    parent::__construct($ogr2ogr_bin_path, $topojson_bin_path, $geojson_bin_path, $mapshaper_bin_path);
   }
 
   /**
@@ -362,7 +411,14 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       throw new Exception("Failed to decompress $shape_file_path to the path $shapefile_content_path");
     }
 
-    $shp_file_path = array_shift(glob($shapefile_content_path . '/*.[Ss][Hh][Pp]'));
+    $files = glob($shapefile_content_path . '/*.[Ss][Hh][Pp]');
+    if(!empty($files)) {
+
+      $shp_file_path = array_shift($files);
+    } else {
+
+      throw new Exception("Failed to parse the .shp/.SHP file from $shape_file_path");
+    }
 
     return $shp_file_path;
   }
@@ -403,11 +459,102 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
       foreach($files as $file) {
 
-	(is_dir("$shapefile_content_dir/$file")) ? delTree("$shapefile_content_dir/$file") : unlink("$shapefile_content_dir/$file");
+	if(is_dir("$shapefile_content_dir/$file")) {
+
+	  self::delTree("$shapefile_content_dir/$file");
+	} else {
+
+	  unlink("$shapefile_content_dir/$file");
+	}
       }
 
       rmdir($shapefile_content_dir);
     }
+  }
+
+  /**
+   * Method for simplifying derivatives
+   * @param string $dsid The ID of the Datastream managing the derivative
+   *
+   */
+  protected function simplify($force_geo_json = FALSE, $precision = NULL) {
+
+    $returnValue = FALSE;
+
+    /*
+    foreach(array('gml', 'kml', 'json') as $derivative_type) {
+
+      $prop_name = "$derivative_type_file_path";
+      if(filesize($this->$prop_name) > 1024*520) {
+
+	
+      }
+    }
+    */
+
+    if($force_geo_json or filesize($this->json_file_path) > 1024*520) {
+
+      $topo_json_file_path = $this->json_file_path;
+
+      // Invoke the interface for reducing TopoJSON into GeoJSON
+      if(isset($precision)) {
+
+	$this->geojson("--precision $precision", $this->json_file_path);
+      } else {
+
+	$this->geojson($this->json_file_path);
+      }
+
+      $shp_file_base = basename($this->shp_file_path, '.shp');
+
+      // Retrieve the JSON Objects generated by TopoJSON
+      $files = array_filter(glob("$shp_file_base.json"), function($e) {
+	  
+	  return preg_match('/[^\.]+\.json/', $e);
+	});
+
+      if(!empty($files)) {
+
+	$this->json_file_path = array_shift($files);
+      } else {
+
+	throw new Exception("Failed to parse the GeoJSON file transformed from the TopoJSON");
+      }
+
+      if(!$force_geo_json) {
+
+	// Ingest the origin TopoJSON Object into a new "TopoJSON" Datastream
+	$topo_json_ds = $object->constructDatastream('TOPOJSON', 'X');
+	$topo_json_ds->label = 'TopoJSON Object';
+	$topo_json_ds->mimetype = 'application/vnd.geo+json';
+	$topo_json_ds->setContentFromFile($topo_json_file_path);
+
+	try {
+
+	  $object->ingestDatastream($topo_json_ds);
+	} catch (Exception $e) {
+      
+	  watchdog('islandora_gis', $e->getMessage(), NULL, WATCHDOG_ERROR);
+	  drupal_set_message(t('A problem occured while ingesting the datastream "@label" for @pid, please notify the administrator.', array('@label' => $topo_json_ds->label, '@pid' => $object->id)), 'error');
+	}
+      }
+
+      // Re-ingest the GeoJSON Object into the "JSON" Datastream
+      $json_ds = $this->object['JSON'];
+      $json_ds->content = $this->json_file_path;
+
+      // Convert the GeoJSON Object into the KML
+      $kml_file_path = $this->kml_file_path;
+      $returnValue = $this->ogr2ogr('-f KML', $kml_file_path, $this->json_file_path);
+
+      // Re-ingest the KML Document into the "KML" Datastream
+      $kml_ds = $this->object['KML'];
+      $kml_ds->content = $kml_file_path;
+
+      $returnValue = $this->json_file_path;
+    }
+
+    return $returnValue;
   }
 
   /**
@@ -421,6 +568,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
     // Construct the file path for the GML Document
     $gml_file_path = preg_replace('/\.shp$/', ".gml.xml", $shp_file_path);
+
+    // @todo Refactor
+    $this->gml_file_path = $gml_file_path;
 
     // Invoke the ogr2ogr binary in order to generate the GML Document from the .SHP file
     $returnValue = $this->ogr2ogr('-f GML', $gml_file_path, $shp_file_path);
@@ -452,6 +602,8 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
      * @todo Implement for the failed KML validation
      *
      */
+
+    return FALSE;
   }
 
   /**
@@ -465,6 +617,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
     // Construct the file path for the KML Document
     $kml_file_path = preg_replace('/\.shp$/', ".kml.xml", $shp_file_path);
+
+    // @todo Refactor
+    $this->kml_file_path = $kml_file_path;
 
     // Invoke the ogr2ogr binary in order to generate the KML Document from the .SHP file
     $returnValue = $this->ogr2ogr('-f KML', $kml_file_path, $shp_file_path);
@@ -511,7 +666,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 	$simplify_args = array();
 	$simplify_args[] = "-simplify";
 
-	if($this->simplify_method != VISVALINGAM) {
+	if($this->simplify_method != self::VISVALINGAM) {
+	// @todo Restructure
+	//if($this->simplify_method != 'visvalingam') {
 
 	  $simplify_args[] = $this->simplify_method;
 	}
@@ -551,6 +708,11 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
       //$returnValue = $this->topojson("-o $json_file_path", $shp_file_path);
       $returnValue = call_user_func_array(array($this, 'topojson'), $topojson_args);
+
+      /**
+       * This merely generates the TopoJSON for future integration with OpenLayers 3
+       * Unfortunately, this is also the process through which simplification and/or quantization must be undertaken
+       */
     }
 
     return $returnValue;
@@ -561,15 +723,19 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
    *
    * @return string The cURL session results from the POST request to ogre
    */
-  public function deriveJson($force_geo_json = FALSE) {
+  public function deriveJson($force_geo_json = TRUE) {
 
     $shp_file_path = $this->shp_file_path;
 
     // Construct the file path for the GeoJSON Object
     $json_file_path = preg_replace('/\.shp$/', ".geojson.json", $shp_file_path);
 
+    // @todo Refactor
+    $this->json_file_path = $json_file_path;
+
     // Attempt to generate the derivative as a TopoJSON Object
-    if(!$force_geo_json and isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
+    //if(!$force_geo_json and isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
+    if(isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
 
       $returnValue = $this->deriveTopoJson();
     } else {
@@ -583,11 +749,17 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       $returnValue = $this->ogr2ogr('-t_srs EPSG:4326', '-f GeoJSON', $json_file_path, $shp_file_path);
     }
 
+    // Validate the JSON output
     $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
+
+    // Simplify the other derivatives using TopoJson
+    // @todo Refactor
+    //if(!$force_geo_json and isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
+    $returnValue = $this->simplify($force_geo_json);
 
     if ($returnValue == '') {
 
-      return $json_file_path;
+      return $this->json_file_path;
     } else {
 
       return $returnValue;
