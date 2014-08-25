@@ -549,7 +549,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
       // Re-ingest the KML Document into the "KML" Datastream
       $kml_ds = $this->object['KML'];
-      $kml_ds->content = $kml_file_path;
+      $kml_ds->setContentFromFile($this->kml_file_path);
 
       $returnValue = $this->json_file_path;
     }
