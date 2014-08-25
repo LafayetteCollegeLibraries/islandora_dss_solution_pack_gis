@@ -477,7 +477,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
    * @param string $dsid The ID of the Datastream managing the derivative
    *
    */
-  protected function simplify($force_geo_json = FALSE, $precision = NULL) {
+  public function simplify($force_geo_json = TRUE, $precision = NULL) {
 
     $returnValue = FALSE;
 
@@ -541,7 +541,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
       // Re-ingest the GeoJSON Object into the "JSON" Datastream
       $json_ds = $this->object['JSON'];
-      $json_ds->content = $this->json_file_path;
+      $json_ds->setContentFromFile($this->json_file_path);
 
       // Convert the GeoJSON Object into the KML
       $kml_file_path = $this->kml_file_path;
@@ -709,6 +709,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       //$returnValue = $this->topojson("-o $json_file_path", $shp_file_path);
       $returnValue = call_user_func_array(array($this, 'topojson'), $topojson_args);
 
+      // @todo Refactor
+      $returnValue = $json_file_path;
+
       /**
        * This merely generates the TopoJSON for future integration with OpenLayers 3
        * Unfortunately, this is also the process through which simplification and/or quantization must be undertaken
@@ -755,7 +758,7 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     // Simplify the other derivatives using TopoJson
     // @todo Refactor
     //if(!$force_geo_json and isset($this->topojson_bin_path) and file_exists($this->topojson_bin_path)) {
-    $returnValue = $this->simplify($force_geo_json);
+    //$returnValue = $this->simplify($force_geo_json);
 
     if ($returnValue == '') {
 

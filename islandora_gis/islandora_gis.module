@@ -134,6 +134,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
   $processor = new ShapefileObjectProcessor($object, NULL, $ogr2ogr_bin_path, $topojson_bin_path, $geojson_bin_path);
 
   // Manually invoke the ShapefileProcessor methods for non-existent derivative datastreams
+  //foreach(array('JSON' => 'GeoJson') as $dsid => $ds_label) {
   foreach(array('GML' => 'Geography Markup Language',
 		'KML' => 'Keyhole Markup Language',
 		'JSON' => 'GeoJson') as $dsid => $ds_label) {
@@ -174,6 +175,8 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
       switch ($control_group) {
 
       case 'M':
+
+	/*
 	if($is_valid_url) {
 
 	  $datastream->setContentFromUrl($datastream_file);
@@ -181,6 +184,8 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 
 	  $datastream->setContentFromFile($datastream_file);
 	}
+	*/
+	$datastream->setContentFromString(file_get_contents($datastream_file));
 	break;
 
       case 'X':
@@ -197,12 +202,19 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 	watchdog('islandora_gis', $e->getMessage(), NULL, WATCHDOG_ERROR);
 	drupal_set_message(t('A problem occured while ingesting the datastream "@label" for @pid, please notify the administrator.', array('@label' => $label, '@pid' => $object->id)), 'error');
       }
+
+      // @todo Refactor
+      if($dsid == 'JSON') {
+	
+	$processor->simplify();
+      }
     }
   }
 
   // For the FGDC metadata transformation
   $fgdc_ds = $object['FGDC'];
-  if(isset($fgdc_ds)) {
+  //if(isset($fgdc_ds)) {
+  if($fgdc_ds) {
     
     $xsl_file_path = dirname(__DIR__) . '/islandora_gis/libraries/xsl/fgdc2mods.xsl';
     $processor = new FgdcDatastreamProcessor($fgdc_ds, $xsl_file_path);
