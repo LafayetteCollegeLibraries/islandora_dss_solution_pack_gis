@@ -28,7 +28,7 @@ class IslandoraGeoServerSession {
   public $user;
   public $pass;
 
-  public function __construct($url = 'http://localhost:8080/geoserver/rest', $user = 'admin', $pass) {
+  public function __construct($pass, $user = 'admin', $url = 'http://localhost:8080/geoserver/rest') {
 
     $this->url = $url;
     $this->user = $user;
@@ -39,42 +39,96 @@ class IslandoraGeoServerSession {
 class IslandoraGeoServerClient {
 
   private $client;
+
   public $workspace;
   public $datastore;
   public $name;
 
+  private static function handle_http_codes($http_code) {
+
+    switch($http_code) {
+
+    case 0:
+    case NULL:
+    case FALSE:
+      throw Exception("Failure to resolve the host");
+      break;
+
+    case 401:
+      throw Exception("Authentication failed");
+      break;
+
+    case 405:
+
+      throw Exception("No such method exists for this resource");
+      break;
+
+    case 200:
+    default:
+
+      break;
+    }
+  }
+
   private function authenticate($user = 'admin', $pass) {
 
-    $this->client->get($this->url, array('auth' => array($user, $pass)));
+    $this->get($this->url, array('auth' => array($user, $pass)));
+    return self::handle_http_codes($res->getStatusCode());
+    /*
     if($res->getStatusCode() != 200) {
 
       throw new Exception("Could not authenticate as $user for $url.");
     }
+    */
   }
 
-  public function __construct($session) {
+  public function __construct($session, $client = NULL) {
 
-    $this->client = new GuzzleHttp\Client();
+    $this->client = $client;
+    if(is_null($this->client)) {
 
+      $this->client = new GuzzleHttp\Client();
+    }
+
+    $this->session = $session;    
     $this->url = $this->session->url;
     $user = $this->session->user;
     $pass = $this->session->pass;
 
-    $this->authenticate($user, $pass);
+    //$this->authenticate($user, $pass);
   }
 
-  private function request($method, $path, $params = array()) {
+  /**
+   * Transmit a request over the HTTP
+   *
+   */
+  private function request($method, $path) {
     
     $url = $this->url . "/$path";
 
     try {
 
-      if(!object_has_method($this->client, $method)) {
+      if(!method_exists($this->client, $method)) {
 
-	throw new Exception($this->client . " does not support the HTTP method $method");
+	throw new \Exception(get_class($this->client) . " does not support the HTTP method $method");
       }
 
-      $response = call_user_func(array($this->client, $method), $url, array('json' => $params));
+      //$request = call_user_func(array($this->client, $method), $url, array('json' => $params));
+
+      //$params = array_merge(array($url), array_splice(func_get_args(), 2));
+      $params = array_splice(func_get_args(), 2);
+      array_unshift($params, $url);
+
+      //if($method == 'post') {
+      if(FALSE) {
+	
+	//$request = $this->client->post($url)->addPostFields(array('param1' => 'value1'));
+	$request = $this->client->post($url, array(), array('param1' => 'value1'));
+	//$request = $this->client->post($url)->setPostField('custom_field', 'my custom value');
+      } else {
+
+	$request = call_user_func_array(array($this->client, $method), $params);
+      }
     } catch (RequestException $e) {
 
       echo $e->getRequest() . "\n";
@@ -85,22 +139,27 @@ class IslandoraGeoServerClient {
       }
     }
 
-    return $response;
+    //return $response;
+    return $request->send();
   }
 
   public function delete($path, $params) {
 
-    return $this->request('delete', $path);
+    $url = $this->url . '/' . $path;
+
+    // DELETE requests always require authentication
+    $this->authenticate($url, $this->session->user, $this->session->pass);
+    return $this->request('delete', $path, $params);
   }
 
-  public function put($path, $params) {
+  public function put($path, $params, $headers = array()) {
 
-    return $this->request('put', $path);
+    return $this->request('put', $path, $headers, $params);
   }
 
-  public function post($path, $params) {
+  public function post($path, $params, $headers = array()) {
 
-    return $this->request('post', $path);
+    return $this->request('post', $path, $headers, $params);
   }
 
   /**
@@ -109,32 +168,7 @@ class IslandoraGeoServerClient {
    */
   public function get($path, $params = array()) {
 
-    return $this->request('get', $path);
-
-    /*
-    $url = "rest/workspaces/{$this->workspace}/datastores/{$this->datastore}/featuretypes/{$this->name}.json";
-    try {
-      $result = geoserver_get($url);
-      $this->feature_type = $result->data;
-    } catch (geoserver_resource_http_exception $exc) {
-      throw new geoserver_resource_exception(
-        t("Could not read feature types from data store @datastore of workspace @workspace from GeoServer: @exception", array(
-          "@datastore" => $this->datastore,
-          "@workspace" => $this->workspace,
-          "@exception" => $exc->getMessage()
-        )));
-    }
-
-    try {
-      $result = geoserver_get("rest/layers/{$this->workspace}:{$this->name}.json");
-      $this->layer = $result->data;
-    } catch (geoserver_resource_http_exception $exc) {
-      throw new geoserver_resource_exception(t("Could not read layer @layer from GeoServer: @exception", array(
-        "@layer" => $this->name,
-        "@exception" => $exc->getMessage()
-      )));
-    }
-    */
+    return $this->request('get', $path, $params);
   }
 }
 
@@ -359,23 +393,37 @@ class GeoServerCoverageStore extends GeoServerResource {
 
 class GeoServerCoverage extends GeoServerResource {
 
-  public $workspace;
+  public $coveragestore;
   private $base_path;
 
   function __construct($client, $name, $workspace) {
 
     $this->workspace = $workspace;
-    $this->base_path = '/workspaces/' . $this->workspace->name . '/coveragestores';
+    $this->base_path = '/workspaces/' . $this->coveragestore->workspace->name . '/coveragestores/' . $this->coveragestore . '/coverages';
+
+    $this->post_path = $this->base_path;
 
     self::parent($client, $name);
+
+    $this->get_path = $this->base_path . '/' . $this->name;
+    $this->put_path = $this->get_path;
+    $this->delete_path = $this->put_path;
   }
 
   /**
    * Create remote resource.
    */
-  public function create($file, $extension = 'shp', $configure = 'first', $target = 'shp', $update = 'append', $charset = 'utf-8') {
+  public function create() {
 
-    $this->client->post($this->post_path, array());
+    return $this->client->post($this->post_path);
+  }
+
+  /**
+   * Read remote resource.
+   */
+  public function read() {
+
+    return $this->client->get($this->get_path);
   }
 
   /**
@@ -383,19 +431,15 @@ class GeoServerCoverage extends GeoServerResource {
    */
   function update($file, $extension = 'shp', $configure = 'first', $target = 'shp', $update = 'append', $charset = 'utf-8') {
 
-    // The Content Type must be explicitly set
-
     $this->client->put($this->put_path, array());
   }
 
   /**
    * Delete remote resource.
    */
-  function delete($recurse = FALSE, $purge = 'none') {
+  function delete($recurse = FALSE) {
 
-    // The Content Type must be explicitly set
-
-    $this->client->delete($this->base_path, array('recurse' => $recurse));
+    $this->client->delete($this->delete_path, array('recurse' => $recurse));
   }
 }
 
