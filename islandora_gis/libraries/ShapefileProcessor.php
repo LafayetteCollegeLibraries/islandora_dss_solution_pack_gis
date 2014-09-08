@@ -492,16 +492,21 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
     }
     */
 
-    if($force_geo_json or filesize($this->json_file_path) > 1024*520) {
+    print $this->object['JSON']->size . "\n";
+    print filesize($this->json_file_path) . "\n";
+
+    if($force_geo_json or filesize($this->json_file_path) > 1024*1024) {
 
       $topo_json_file_path = $this->json_file_path;
 
       // Invoke the interface for reducing TopoJSON into GeoJSON
       if(isset($precision)) {
 
+	print "trace1\n";
 	$this->geojson("--precision $precision", $this->json_file_path);
       } else {
 
+	print "trace2\n";
 	$this->geojson($this->json_file_path);
       }
 

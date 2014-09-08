@@ -1,6 +1,6 @@
 <?php namespace IslandoraGeoServer;
 
-require 'vendor/autoload.php';
+include_once __DIR__ . "/../vendor/autoload.php";
 
   /**
    * Class for the Islandora/GeoServer API
@@ -65,7 +65,7 @@ class IslandoraGeoServerSession {
     return $cookies;
   }
 
-  public function __construct($pass, $user = 'admin', $url = 'http://localhost:8080/geoserver/rest') {
+  public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest') {
 
     $this->url = $url;
     $this->user = $user;
@@ -178,20 +178,12 @@ class IslandoraGeoServerClient {
     $params = array_splice(func_get_args(), 2);
     array_unshift($params, $url);
 
-    print_r($params);
-
     $request = call_user_func_array(array($this->client, $method), $params);
     try {
 
       $response = $request->send();
     } catch(ClientErrorResponseException $e) {
 
-      /*
-      print_r($error_response->getMessage());
-      exit(1);
-      $response = new Response('');
-      */
-      print $e->getMessage();
       $response = $e->getResponse();
     }
 
@@ -496,7 +488,7 @@ class GeoServerCoverageStore extends GeoServerResource {
 
     if(!preg_match('/tiff?$/', $file_path)) {
 
-      throw new Exception("Unsupported file format for $file_path");
+      throw new \Exception("Unsupported file format for $file_path");
     }
     $response = $this->client->put($this->base_path . '/' . $this->name . '/file.geotiff',
 				   $fh,
@@ -532,6 +524,8 @@ class GeoServerCoverageStore extends GeoServerResource {
 
     foreach($data['coverageStore'] as $property => $value) {
 
+      $values = array();
+
       switch($property) {
 	
       case 'coverages':
@@ -540,12 +534,15 @@ class GeoServerCoverageStore extends GeoServerResource {
 	$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
 	$data = $response->json();
 
-	foreach($data['coverages'] as $key => $value) {
+	if(array_key_exists('coverages', $data) and !empty($data['coverages'])) {
 
-	  $coverage = array_shift($value);
-	  $values[$coverage['name']] = new GeoServerCoverage($this->client, $coverage['name'], $this);
+	  foreach($data['coverages'] as $key => $value) {
+
+	    $coverage = array_shift($value);
+	    $values[$coverage['name']] = new GeoServerCoverage($this->client, $coverage['name'], $this);
+	  }
+	  $this->{$property} = $values;
 	}
-	$this->{$property} = $values;
 	break;
 
       default:

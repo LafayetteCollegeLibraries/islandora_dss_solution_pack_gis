@@ -6,3 +6,84 @@
    *
    */
 
+module_load_include('inc', 'islandora_gis_geoserver', '/islandora_gis_geoserver.openlayers');
+module_load_include('inc', 'islandora_gis_geoserver', '/islandora_gis_geoserver.layer');
+
+
+
+/**
+ * Implements hook_CMODEL_PID_islandora_object_ingested().
+ *
+ */
+//function islandora_large_image_islandora_sp_large_image_cmodel_islandora_object_ingested($object) {
+function islandora_gis_geoserver_islandora_sp_large_image_cmodel_islandora_object_ingested($object) {
+
+  // Verify that this is a GeoTIFF
+  
+  // Relate this to a Shapefile
+}
+
+
+/**
+ * For generating geoserver layers using an Islandora Shapefile Object
+ * @see geoserver_layers_load()
+ *
+ */
+function islandora_gis_geoserver_layers_load($shapefile) {
+
+  /*
+  ctools_include('export');
+
+  if ($reset) {
+    ctools_export_load_object_reset('geoserver_layers');
+  }
+
+  $layers = ctools_export_load_object('geoserver_layers', 'all', array());
+  */
+  $layers = $object->shapefile->get_base_maps();
+
+  foreach ($layers as $index => $layer) {
+    $layer_object = geoserver_get_layer_object($layer);
+    if ($layer_object) {
+      $layers[$index] = $layer_object;
+    }
+    else {
+      unset($layers[$index]);
+    }
+  }
+
+  return $layers;
+}
+
+/**
+ * Get layer object
+ * @see geoserver_get_layer_object()
+ *
+ * @ingroup openlayers_api
+ * @param $reset
+ *   Boolean whether to reset cache or not
+ * @return array
+ *   array of layer info
+ */
+function islandora_gis_geoserver_get_layer_object($layer) {
+
+  // Static cache because this function will possibly be called in big loops.
+  static $layer_types;
+  if (!isset($layer_types)) {
+    $layer_types = geoserver_layer_types();
+  }
+
+  $layer->title = t($layer->title);
+  $layer->description = t($layer->description);
+
+  if (is_array($layer->data) && isset($layer->data['type']) &&  isset($layer_types[$layer->data['type']])) {
+    $layer_class = ctools_plugin_get_class($layer_types[$layer->data['type']], 'layer_type');
+    if ($layer_class) {
+      return new $layer_class($layer);
+    }
+  }
+
+  watchdog('geoserver', 'Layer %name is unavailable because its layer type or the module that provides its layer type is missing',
+    array('%name' => $layer->name), WATCHDOG_ERROR);
+  return FALSE;
+}
