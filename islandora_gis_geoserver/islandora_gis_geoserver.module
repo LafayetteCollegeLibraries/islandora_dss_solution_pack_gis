@@ -6,10 +6,34 @@
    *
    */
 
-module_load_include('inc', 'islandora_gis_geoserver', '/islandora_gis_geoserver.openlayers');
-module_load_include('inc', 'islandora_gis_geoserver', '/islandora_gis_geoserver.layer');
+module_load_include('inc', 'islandora_gis_geoserver', '/includes/islandora_gis_geoserver.openlayers');
+module_load_include('inc', 'islandora_gis_geoserver', '/includes/islandora_gis_geoserver.layer');
+module_load_include('inc', 'islandora_gis_geoserver', '/theme/theme');
 
+/**
+ * Implements hook_ctools_plugin_api().
+ *
+ * Required for OpenLayers integration.
+ */
+function islandora_gis_geoserver_ctools_plugin_api($module, $api) {
 
+  if($module == 'openlayers') {
+
+    switch ($api) {
+
+    case 'openlayers_layers':
+      return array('version' => 1);
+    }
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function islandora_gis_geoserver_ctools_plugin_type() {
+
+  return array('layer_types' => array());
+}
 
 /**
  * Implements hook_CMODEL_PID_islandora_object_ingested().
@@ -23,67 +47,27 @@ function islandora_gis_geoserver_islandora_sp_large_image_cmodel_islandora_objec
   // Relate this to a Shapefile
 }
 
-
 /**
- * For generating geoserver layers using an Islandora Shapefile Object
- * @see geoserver_layers_load()
+ * Retrieve the Session Object for Islandora
+ * Session Objects provide an interface for Fedora Generic Search and Apache Solr
  *
  */
-function islandora_gis_geoserver_layers_load($shapefile) {
+function islandora_gis_geoserver_get_session($user = 'admin', $pass = 'secret', $url = 'http://localhost:8080/geoserver') {
 
-  /*
-  ctools_include('export');
+  $session = &drupal_static(__FUNCTION__);
+  if(!$session) {
 
-  if ($reset) {
-    ctools_export_load_object_reset('geoserver_layers');
-  }
+    try {
 
-  $layers = ctools_export_load_object('geoserver_layers', 'all', array());
-  */
-  $layers = $object->shapefile->get_base_maps();
+      $session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
+    } catch (Exception $e) {
 
-  foreach ($layers as $index => $layer) {
-    $layer_object = geoserver_get_layer_object($layer);
-    if ($layer_object) {
-      $layers[$index] = $layer_object;
+      drupal_set_message(t('Unable to establish an Islandora GeoServer Session: %error', array('%error' => $e)), 'error');
     }
-    else {
-      unset($layers[$index]);
-    }
+  } else {
+
+    return NULL;
   }
 
-  return $layers;
-}
-
-/**
- * Get layer object
- * @see geoserver_get_layer_object()
- *
- * @ingroup openlayers_api
- * @param $reset
- *   Boolean whether to reset cache or not
- * @return array
- *   array of layer info
- */
-function islandora_gis_geoserver_get_layer_object($layer) {
-
-  // Static cache because this function will possibly be called in big loops.
-  static $layer_types;
-  if (!isset($layer_types)) {
-    $layer_types = geoserver_layer_types();
-  }
-
-  $layer->title = t($layer->title);
-  $layer->description = t($layer->description);
-
-  if (is_array($layer->data) && isset($layer->data['type']) &&  isset($layer_types[$layer->data['type']])) {
-    $layer_class = ctools_plugin_get_class($layer_types[$layer->data['type']], 'layer_type');
-    if ($layer_class) {
-      return new $layer_class($layer);
-    }
-  }
-
-  watchdog('geoserver', 'Layer %name is unavailable because its layer type or the module that provides its layer type is missing',
-    array('%name' => $layer->name), WATCHDOG_ERROR);
-  return FALSE;
+  return $session;
 }

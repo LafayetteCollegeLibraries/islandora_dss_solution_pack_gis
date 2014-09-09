@@ -47,29 +47,31 @@ function islandora_gis_geoserver_drush_command() {
   return $items;
 }
 
-$module_path = drupal_get_path('module', 'islandora_dss');
-include_once "$module_path/libraries/Islandora.php";
-
-$module_path = drupal_get_path('module', 'islandora_gis_geoserver');
-include_once "$module_path/libraries/IslandoraGeoServerClient.php";
-include_once "$module_path/libraries/Shapefile.php";
-
 /**
  * For ingestion using a drush command
  * @param string $file_path The file system path to the compressed Esri Shapefile
  *
  */
-function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id, $map_object_id, $user, $pass, $url = 'http://rhodes0.stage.lafayette.edu:8080/geoserver-sqlite-2.5') {
+function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id, $map_object_id, $user, $pass, $url = NULL) {
 
   // Instantiate the connection as the admin user
   $connection = islandora_get_tuque_connection(user_load(1));
-
   $session = new IslandoraSession($connection);
+
+  $url = is_null($url) ? geoserver_url() : $url;
+
   $geoserver_session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
+
   $shapefile = new IslandoraShapefile($session, $geoserver_session, $object_id);
 
-  $map = new IslandoraGeoImage($session, $geoserver_session, $map_object_id);
+  $workspace = variable_get('geoserver_workspace', '');
+
+  // Work-around for empty strings (default)
+  // @todo Refactor
+  $workspace = empty($workspace) ? 'default' : $workspace;
+
+  $map = new IslandoraGeoImage($session, $geoserver_session, $map_object_id, $workspace);
+
   $map->add_shapefile($shapefile);
   drush_log(dt('Successfully added the Shapefile Object ' . $object_id . ' as a dependent of the GeoTIFF base map ' . $map_object_id), 'success');
-
 }

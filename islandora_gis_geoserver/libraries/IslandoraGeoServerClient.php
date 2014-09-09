@@ -67,7 +67,7 @@ class IslandoraGeoServerSession {
 
   public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest') {
 
-    $this->url = $url;
+    $this->url = rtrim($url, '/');
     $this->user = $user;
     $this->pass = $pass;
   }
@@ -295,6 +295,9 @@ class GeoServerWorkspace extends GeoServerResource {
 
     $response = $this->client->get('workspaces/' . $this->name . '.json', array(), array('content-type' => 'application/json'));
     $data = $response->json();
+
+    if(array_key_exists('workspace', $data)) {
+
     foreach($data['workspace'] as $property => $value) {
 
       $values = array();
@@ -322,6 +325,10 @@ class GeoServerWorkspace extends GeoServerResource {
 	$this->{$property} = $value;
 	break;
       }
+    }
+    } else {
+
+      throw new \Exception("Workspace could not be retrieved: " . $this->name);
     }
 
     // Load a data store
@@ -517,7 +524,7 @@ class GeoServerCoverageStore extends GeoServerResource {
       return $this->create();
     } elseif(!$response->isSuccessful()) {
       
-      throw new Exception("Failed to retrieve the coverage store $name");
+      throw new \Exception("Failed to retrieve the coverage store $name");
     }
 
     $data = $response->json();
@@ -640,12 +647,10 @@ class GeoServerCoverage extends GeoServerResource {
    */
   public function read() {
 
-    //print $this->base_path . '/' . $this->name . '.json';
     //return $this->client->get($this->get_path);
     $response = $this->client->get($this->base_path . '/' . $this->name . '.json', array(), array('content-type' => 'application/json'));
 
     $data = $response->json();
-    //print_r($data);
   }
 
   /**

@@ -282,6 +282,8 @@ function islandora_gis_build_map($map = array()) {
   $map['behaviors'] = _openlayers_behaviors_render($map['behaviors'], $map);
   $map['styles'] = _openlayers_styles_process($map['styles'], $map['layer_styles'], $map['layer_styles_select'], $map['layer_styles_temporary'], $map);
 
+  dpm($map);
+
   // Restrict map to its projection extent (data outwith cannot be represented).
   // Layer can additionally specfiy their maxExtent in case they use
   // non-default grids.
