@@ -198,8 +198,7 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 
   // Load the layer from the Islandora Object
   $islandora_layer = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $object);
-
-  $layers['islandora_layer'] = $islandora_layer;
+  //$layers['islandora_layer'] = $islandora_layer;
 
   $default_layer = 'mapquest_osm';
 
@@ -216,11 +215,12 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 				 'layers' => $layers,
 				 'projection' => 'EPSG:3857',
 				 'displayProjection' => 'EPSG:4326',
-				 'styles' => array(
-						   'default' => 'default',
+				 'styles' => array('default' => 'default',
 						   'select' => 'default_select',
 						   'temporary' => 'default',
 						   ),
+				 'islandora_layers' => array(array('layer' => $islandora_layer,
+								   'callback' => '_islandora_gis_layers_process'))
 				 );
 
   return $openlayers_maps->data;
@@ -271,13 +271,24 @@ function islandora_gis_build_map($map = array()) {
 
   // Process map parts.
 
+  /*
   // This assumes that the Islandora Layer is always the last in the array
   $islandora_layer = array_pop($map['layers']);
 
+  $map['islandora_layer'] = array('layer' => $islandora_layer,
+				  'callback' => '_islandora_gis_layers_process');
+  */
+
   $map['layers'] = _openlayers_layers_process($map['layers'], $map);
 
+  dpm($map);
+
+  //$map['layers'] = array_merge($map['layers'], _islandora_gis_layers_process(array($islandora_layer), $map));
   // Retrieve the Layer Object from the Islandora Layer
-  $map['layers'] = array_merge($map['layers'], _islandora_gis_layers_process(array($islandora_layer), $map));
+  foreach($map['islandora_layers'] as $islandora_layer) {
+
+    $map['layers'][] = call_user_func($islandora_layer['callback'], array($islandora_layer['layer']), $map);
+  }
 
   $map['behaviors'] = _openlayers_behaviors_render($map['behaviors'], $map);
   $map['styles'] = _openlayers_styles_process($map['styles'], $map['layer_styles'], $map['layer_styles_select'], $map['layer_styles_temporary'], $map);

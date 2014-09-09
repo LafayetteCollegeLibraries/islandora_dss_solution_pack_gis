@@ -71,3 +71,13 @@ function islandora_gis_geoserver_get_session($user = 'admin', $pass = 'secret', 
 
   return $session;
 }
+
+/**
+ * Implements hook_islandora_gis_map_load_alter().
+ *
+ */
+function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map) {
+
+  $map['islandora_layers'] = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers());
+  dpm($map);
+}

@@ -98,6 +98,8 @@ function islandora_gis_theme($existing, $type, $theme, $path) {
   );
 }
 
+
+
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
  *
@@ -106,8 +108,20 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
 
   module_load_include('inc', 'islandora_gis', 'includes/openlayers');
 
-  $map = islandora_gis_map_load($object);
+  $map = array();
+
+  // Hook for islandora_gis_map_load_preprocess_alter
+  drupal_alter('islandora_gis_map_load_preprocess', $map);
+
+  //$map = islandora_gis_map_load($object);
+  $map = array_merge($map, islandora_gis_map_load($object));
+
+  // Functionality for islandora_gis_geoserver
+  // @todo Refactor with hooks
   variable_set('islandora_gis_view_object_pid', $object->id);
+
+  // Hook for islandora_gis_map_load_alter
+  drupal_alter('islandora_gis_map_load', $map);
 
   $map_output = islandora_gis_render_map_data($map);
 

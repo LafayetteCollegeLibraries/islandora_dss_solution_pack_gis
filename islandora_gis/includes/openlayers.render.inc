@@ -18,7 +18,8 @@
  * @return $layer_data
  *   Array of initialized layer objects
  */
-function _islandora_gis_layers_process($layers = array(), &$map = array()) {
+  //function _islandora_gis_layers_process($layers = array(), &$map = array()) {
+function _islandora_gis_layers_process($layers = array(), $map = array()) {
   $layer_data = array();
 
   // Load Layers and assign weights
@@ -48,5 +49,6 @@ function _islandora_gis_layers_process($layers = array(), &$map = array()) {
     }
   }
 
-  return $layer_data;
+  //return $layer_data;
+  return $layer_object->data;
 }

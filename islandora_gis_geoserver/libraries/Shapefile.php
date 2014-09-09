@@ -123,8 +123,7 @@ class IslandoraShapefile extends IslandoraObject {
               <fedora-model:state> <fedora-model:Active> .';
     $query .= '} ORDER BY $title';
 
-    $query_array = array(
-			 'query' => $query,
+    $query_array = array('query' => $query,
 			 'type' => 'sparql',
 			 //'pid' => $obj_pid,
 			 // Seems as though this is ignored completely.
