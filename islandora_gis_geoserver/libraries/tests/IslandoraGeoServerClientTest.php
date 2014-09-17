@@ -25,7 +25,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     $this->url = array_pop($argv);
     $this->pass = array_pop($argv);
 
-    $this->session = new IslandoraGeoServerSession($this->pass, 'admin', $this->url);
+    $this->session = new IslandoraGeoServerSession('admin', $this->pass, $this->url);
 
     $this->plugin = new Guzzle\Plugin\Mock\MockPlugin();
 
@@ -63,6 +63,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
 
 	$this->assertEquals(FALSE, strpos($location_path, 'error=true'));
 
+	/*
 	// Attempt to create the coverage from the file in the TIFF
 	$headers = array('Content-type: image/tiff');
 
@@ -95,11 +96,9 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
 	fclose($f);
 
 	//$this->assertEquals('201', $http_code);
+	*/
       }
     }
-    
-    
-    
   }
 
   public function testGuzzle() {
@@ -155,6 +154,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     $payload = $response->json();
     print_r($payload);
 
+    /*
     // Add a coverage store
     $request = $client->post('rest/workspaces/default/coveragestores.json', array('content-type' => 'application/json'));
     $request->setBody(json_encode( array('coverageStore' => array('name' => 'test-coverage-store',
@@ -164,6 +164,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     //$response = $request->send();
     //$payload = $response->json();
     print_r($payload);
+    */
 
     // Add a coverage
     //$request = $client->post('rest/workspaces/default/coveragestores/test-coverage-store/file.geotiff', array('content-type' => 'application/zip'));
@@ -204,6 +205,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     // Add a coverage
     //$request = $client->post('rest/workspaces/default/coveragestores/test-coverage-store/file.geotiff', array('content-type' => 'application/zip'));
 
+    /*
     $file_name_with_full_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
     $f = fopen($file_name_with_full_path, "rb");
     $request = $client->put('rest/workspaces/default/coveragestores/islandora:test/file.geotiff', array('content-type' => 'image/tiff'),
@@ -221,7 +223,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     $response = $request->send();
     $payload = $response->json();
     print_r($payload);
-
+    */
 
     /*
     // Add a layer
@@ -282,27 +284,35 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     $workspace->deleteCoverageStore('test3');
   }
 
+  /**
+   * Testing the creation of data stores from compressed Shapefiles
+   *
+   */
+  public function testCreateDataStore() {
+
+    $this->client = new IslandoraGeoServerClient($this->session);
+    $workspace = $this->client->workspace('default');
+
+    $file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/libraries/tests/fixtures/test.zip';
+    $workspace->createDataStore('test4', $file_path);
+  }
+
+  /**
+   * Testing the deletion of data stores from compressed Shapefiles
+   *
+   */
+  public function testDeleteDataStore() {
+
+    $this->client = new IslandoraGeoServerClient($this->session);
+    $workspace = $this->client->workspace('default');
+
+    $file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/libraries/tests/fixtures/test.zip';
+    $workspace->createDataStore('test5', $file_path);
+    $workspace->deleteDataStore('test5');
+  }
+
   public function testPost() {
 
-    /*
-    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
-
-    $params = array('param' => 'value');
-    $this->client->post('path', $params);
-
-    $requests = $this->plugin->getReceivedRequests();
-    $this->assertNotEmpty($requests);
-
-    $request = array_pop($requests);
-    $this->assertEquals('POST', $request->getMethod());
-    $this->assertEquals('localhost', $request->getHost());
-    $this->assertEquals('/geoserver/rest/path', $request->getPath());
-
-    /*
-    print_r( $request->getHeaders()->toArray());
-    print_r( $request->getParams()->toArray());
-    //$this->assertEquals($params, $request->getQuery()->urlEncode());
-    */
   }
 
   public function testPut() {

@@ -26,6 +26,8 @@ use Guzzle\Http\Client;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Guzzle\Plugin\Cookie\CookiePlugin;
 use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
+use Guzzle\Plugin\CurlAuth\CurlAuthPlugin;
+
 
 class IslandoraGeoServerSession {
 
@@ -48,7 +50,7 @@ class IslandoraGeoServerSession {
 	       );
       */
       
-      throw new Exception("Couldn't read cookies for GeoServer. Did your session expire?");
+      throw new \Exception("Couldn't read cookies for GeoServer. Did your session expire?");
       return array();
     }
     foreach ($lines as $line) {
@@ -67,7 +69,7 @@ class IslandoraGeoServerSession {
 
   public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest') {
 
-    $this->url = rtrim($url, '/');
+    $this->url = rtrim($url, '/') . '/';
     $this->user = $user;
     $this->pass = $pass;
   }
@@ -114,7 +116,7 @@ class IslandoraGeoServerClient {
     try {
 
       self::handle_http_codes($res->getStatusCode());
-      $this->url .= '/rest';
+      $this->url .= 'rest';
     } catch(Exception $e) {
 
       throw $e;
@@ -132,8 +134,11 @@ class IslandoraGeoServerClient {
     if(is_null($this->client)) {
 
       $cookiePlugin = new CookiePlugin(new ArrayCookieJar());
+      $authPlugin = new CurlAuthPlugin($user, $pass);
+
       $this->client = new Client($this->url);
       $this->client->addSubscriber($cookiePlugin);
+      //$this->client->addSubscriber($authPlugin);
     }
 
     $this->authenticate($user, $pass);
@@ -177,6 +182,7 @@ class IslandoraGeoServerClient {
     //$params = array_merge(array($url), array_splice(func_get_args(), 2));
     $params = array_splice(func_get_args(), 2);
     array_unshift($params, $url);
+    print_r($params);
 
     $request = call_user_func_array(array($this->client, $method), $params);
     try {
@@ -288,7 +294,7 @@ class GeoServerWorkspace extends GeoServerResource {
   }
 
   /**
-   * Load all datatores and coveragestores
+   * Load all datastores and coveragestores
    *
    */
   public function read() {
@@ -298,34 +304,52 @@ class GeoServerWorkspace extends GeoServerResource {
 
     if(array_key_exists('workspace', $data)) {
 
-    foreach($data['workspace'] as $property => $value) {
+      foreach($data['workspace'] as $property => $value) {
 
-      $values = array();
-      switch($property) {
+	$values = array();
+	switch($property) {
 	
-      case 'dataStores':
-	// @todo Implement
-	break;
+	case 'dataStores':
 
-      case 'coverageStores':
+	  // Retrieve the data stores
+	  $response = $this->client->get('workspaces/' . $this->name . '/datastores.json', array(), array('content-type' => 'application/json'));
+	  $data = $response->json();
 
-	// Retrieve the coverage stores
-	$response = $this->client->get('workspaces/' . $this->name . '/coveragestores.json', array(), array('content-type' => 'application/json'));
-	$data = $response->json();
-	foreach($data['coverageStores'] as $key => $value) {
+	  if(array_key_exists('dataStores', $data) and !empty($data['dataStores'])) {
 
-	  $coverage_store = array_shift($value);
-	  $values[$coverage_store['name']] = new GeoServerCoverageStore($this->client, $coverage_store['name'], $this);
+	    foreach($data['dataStores'] as $key => $value) {
+
+	      $data_store = array_shift($value);
+	      $values[$data_store['name']] = new GeoServerDataStore($this->client, $data_store['name'], $this);
+	    }
+	  }
+
+	  $this->{$property} = $values;
+	  break;
+
+	case 'coverageStores':
+
+	  // Retrieve the coverage stores
+	  $response = $this->client->get('workspaces/' . $this->name . '/coveragestores.json', array(), array('content-type' => 'application/json'));
+	  $data = $response->json();
+
+	  if(array_key_exists('coverageStores', $data) and !empty($data['coverageStores'])) {
+
+	    foreach($data['coverageStores'] as $key => $value) {
+
+	      $coverage_store = array_shift($value);
+	      $values[$coverage_store['name']] = new GeoServerCoverageStore($this->client, $coverage_store['name'], $this);
+	    }
+	  }
+	  $this->{$property} = $values;
+	  break;
+
+	default:
+	  
+	  $this->{$property} = $value;
+	  break;
 	}
-	$this->{$property} = $values;
-	break;
-
-      default:
-
-	$this->{$property} = $value;
-	break;
       }
-    }
     } else {
 
       throw new \Exception("Workspace could not be retrieved: " . $this->name);
@@ -375,6 +399,32 @@ class GeoServerWorkspace extends GeoServerResource {
     $coverage_store = $this->coverageStores[$name];
     return $coverage_store->delete();
   }
+
+  /**
+   * Create a data store
+   *
+   */
+  public function createDataStore($name, $file_path = NULL) {
+
+    $data_store = new GeoServerDataStore($this->client, $name, $this, $file_path);
+    $this->dataStores[$name] = $data_store;
+    return $data_store;
+  }
+
+  /**
+   * Delete a data store
+   *
+   */
+  public function deleteDataStore($name) {
+
+    if(!array_key_exists($name, $this->dataStores)) {
+
+      throw new Exception("Data store does not exist: $name");
+    }
+
+    $data_store = $this->dataStores[$name];
+    return $data_store->delete();
+  }
 }
 
 /**
@@ -415,25 +465,104 @@ class GeoServerDatastore extends GeoServerResource {
   private $base_path;
   private $post_put_path;
 
-  function __construct($client, $name, $workspace, $resource_type = FILE, $resource_type_extension) {
+  //function __construct($client, $name, $workspace, $resource_type = FILE, $resource_type_extension) {
+  function __construct($client, $name, $workspace, $file_path = NULL) {
 
     $this->workspace = $workspace;
-    $this->base_path = '/workspaces/' . $this->workspace->name . '/datastores';
-
-    $this->resource_type = $resource_type;
-
-    $this->post_path = $this->base_path . '/' . self::extension_to_str($this->resource_type);
-    $this->put_path = $this->post_path;
+    $this->base_path = 'workspaces/' . $this->workspace->name . '/datastores';
+    $this->file_path = $file_path;
 
     parent::__construct($client, $name);
   }
 
   /**
-   * Create remote resource.
+   * Create a data store
+   * @todo Abstract for other entities within GeoServer
+   *
    */
-  public function create($file, $extension = 'shp', $configure = 'first', $target = 'shp', $update = 'append', $charset = 'utf-8') {
+  public function create($file_path = NULL) {
 
-    $this->client->post($this->post_path, array());
+    if(is_null($file_path)) {
+
+      $file_path = $this->file_path;
+    }
+    $fh = fopen($file_path, "rb");
+
+    if(!preg_match('/zip?$/', $file_path)) {
+
+      throw new \Exception("Unsupported file format for $file_path");
+    }
+    $response = $this->client->put($this->base_path . '/' . $this->name . '/file.shp',
+				   $fh,
+				   array('content-type' => 'application/zip'));
+
+    if(!$response->isSuccessful()) {
+
+      throw new Exception("Failed to create a coverage store from $file_path");
+    }
+
+    return $this->read();
+  }
+
+  /**
+   * Load all data stores
+   *
+   */
+  protected function read() {
+
+    //print $this->base_path . '/' . $this->name . '.json';
+    $response = $this->client->get($this->base_path . '/' . $this->name . '.json', array(), array('content-type' => 'application/json'));
+    //$response = $this->client->get($this->base_path . '/' . $this->name . '.json', array('content-type' => 'application/json'));
+
+    // If this coverage store cannot be found, and if a file path was set...
+    if($response->getStatusCode() == 404 and !is_null($this->file_path)) {
+
+      // ...attempt to create the coverage store.
+      return $this->create();
+    } elseif(!$response->isSuccessful()) {
+      
+      throw new \Exception("Failed to retrieve the data store $name");
+    }
+
+    //print_r((string) $response);
+
+    print $response->getStatusCode();
+
+    $data = $response->json();
+    print_r($data);
+
+    /*
+    foreach($data['dataStore'] as $property => $value) {
+
+      $values = array();
+
+      switch($property) {
+	
+      case 'coverages':
+
+	// Retrieve the coverage stores
+	$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
+	$data = $response->json();
+
+	if(array_key_exists('coverages', $data) and !empty($data['coverages'])) {
+
+	  foreach($data['coverages'] as $key => $value) {
+
+	    $coverage = array_shift($value);
+	    $values[$coverage['name']] = new GeoServerCoverage($this->client, $coverage['name'], $this);
+	  }
+	  $this->{$property} = $values;
+	}
+	break;
+
+      default:
+
+	break;
+      }
+    }
+    */
+
+    return $this;
   }
 
   /**

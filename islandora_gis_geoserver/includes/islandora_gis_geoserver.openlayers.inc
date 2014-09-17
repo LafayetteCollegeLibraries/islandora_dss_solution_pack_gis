@@ -43,20 +43,25 @@ function _islandora_gis_geoserver_openlayers_layers() {
 			      'base_url' => $url . 'wms',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
-			      'params' => array(
-						'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
+			      'params' => array('isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 						'buffer' => '2',
 						'ratio' => '1.5',
 						'singleTile' => 1,
 						),
-			      'options' => array(
-						 'TRANSPARENT' => 'true',
+			      'options' => array('TRANSPARENT' => 'true',
 						 'exceptions' => 'application/vnd.ogc.se_inimage',
 						 'format' => 'image/png',
-						 'layers' => array($workspace . ':' . $gs_layer->name),
+						 //'layers' => array($workspace . ':' . $gs_layer->name),
+						 'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified'),
+						 //'layers' => array($workspace . ':' . 'easton_pa_ne'),
 						 'styles' => '',
+						 //'numZoomLevels' => 36 // Zoom levels
 						 ),
+			      'numZoomLevels' => 36, // Zoom levels
+			      'maxResolution' => 0.17578125,
 			      );
+      dpm($ol_layer);
+
       //$ol_layers[$ol_layer->name] = $ol_layer;
       $ol_layers[] = array('layer' => $ol_layer,
 			   'callback' => '_islandora_gis_layers_process');

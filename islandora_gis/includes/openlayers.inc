@@ -149,12 +149,10 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
   $image_path = drupal_get_path('module', 'openlayers') . '/themes/default_dark/img/';
   $css_path = drupal_get_path('module', 'openlayers') . '/themes/default_dark/style.css';
 
-  $center = array('initial' => array(
-				     'centerpoint' => '0,0',
+  $center = array('initial' => array('centerpoint' => '0,0',
 				     'zoom' => '2',
 				     ),
-		  'restrict' => array(
-				      'restrictextent' => 0,
+		  'restrict' => array('restrictextent' => 0,
 				      'restrictedExtent' => '',
 				      ),
 		  );
@@ -166,33 +164,26 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 								 'roundedCornerColor' => '#222222',
 								 'maximizeDefault' => 0,
 								  ),
-		     'openlayers_behavior_navigation' => array(
-							      'zoomWheelEnabled' => 1,
+		     'openlayers_behavior_navigation' => array('zoomWheelEnabled' => 1,
 							      'zoomBoxEnabled' => 1,
 							      'documentDrag' => 0,
 							       ),
-		     'openlayers_behavior_panzoombar' => array(
-							      'zoomWorldIcon' => 0,
+		     'openlayers_behavior_panzoombar' => array('zoomWorldIcon' => 0,
 							      'panIcons' => 1,
 							       ),
-		     'openlayers_behavior_popup' => array(
-							 'layers' => array(
-									   'islandora_layer' => 'islandora_layer',
+		     'openlayers_behavior_popup' => array('layers' => array('islandora_layer' => 'islandora_layer',
 									   ),
-							 'panMapIfOutOfView' => 0,
-							 'keepInMap' => 1,
+							  'panMapIfOutOfView' => 0,
+							  'keepInMap' => 1,
 							  ),
-		     'openlayers_behavior_zoomtolayer' => array(
-							       'zoomtolayer' => array(
-										      'islandora_layer' => 'islandora_layer',
-										      ),
-							       'point_zoom_level' => '5',
-							       'zoomtolayer_scale' => '1',
+		     'openlayers_behavior_zoomtolayer' => array('zoomtolayer' => array('islandora_layer' => 'islandora_layer',
+										       ),
+								'point_zoom_level' => '5',
+								'zoomtolayer_scale' => '1',
 								),
 		     );
 
-  $layers = array(
-		  'mapquest_osm' => 'mapquest_osm',
+  $layers = array('mapquest_osm' => 'mapquest_osm',
 		  'mapquest_openaerial' => 'mapquest_openaerial',
 		  );
 
@@ -202,8 +193,7 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 
   $default_layer = 'mapquest_osm';
 
-  $openlayers_maps->data = array(
-				 'width' => 'auto',
+  $openlayers_maps->data = array('width' => 'auto',
 				 'height' => '400px',
 				 'image_path' => $image_path,
 				 'css_path' => $css_path,
@@ -220,7 +210,8 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 						   'temporary' => 'default',
 						   ),
 				 'islandora_layers' => array(array('layer' => $islandora_layer,
-								   'callback' => '_islandora_gis_layers_process'))
+								   'callback' => '_islandora_gis_layers_process')),
+				 'minExtent' => array(-1, -1, 1, 1)
 				 );
 
   return $openlayers_maps->data;
@@ -327,6 +318,9 @@ function islandora_gis_build_map($map = array()) {
 
     // Ensure JavaScript gets proper type.
     $map['layers'][$layer_name]['isBaseLayer'] = (boolean)($layer['isBaseLayer']);
+
+    // griffinj
+    $map['layers'][$layer_name]['numZoomLevels'] = 64;
   }
 
   // Hook to alter map one last time.  Final modification to existing
@@ -422,6 +416,9 @@ function islandora_gis_render_map_data($map = array()) {
     // Ensure projections in use are known to the client (loads Proj4js if required)
     openlayers_add_js_projection_definition(openlayers_get_projection_by_identifier($map['projection']));
     openlayers_add_js_projection_definition(openlayers_get_projection_by_identifier($map['displayProjection']));
+
+    $map['numZoomLevels'] = 64;
+    dpm($map);
 
     $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
     drupal_add_js($js, 'setting');

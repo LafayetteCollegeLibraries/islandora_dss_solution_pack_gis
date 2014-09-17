@@ -10,10 +10,10 @@ include_once __DIR__ . "/IslandoraGeoServerClient.php";
 use IslandoraGeoServer\IslandoraGeoServerSession;
 use IslandoraGeoServer\IslandoraGeoServerClient;
 
-  /**
-   * Class for Islandora GeoTIFF Images
-   *
-   */
+/**
+ * Class for Islandora GeoTIFF Images
+ *
+ */
 
 define('FEDORA_RELS_EXT_URI', 'info:fedora/fedora-system:def/relations-external#');
 
@@ -110,6 +110,21 @@ class IslandoraShapefile extends IslandoraObject {
 
     $this->base_maps = array();
     $this->get_base_maps();
+
+    if(!is_null($geoserver_session)) {
+
+      $this->client = new IslandoraGeoServerClient($geoserver_session);
+      $workspace = $this->client->workspace($workspace);
+
+      //$file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
+      $file_path = '/tmp/IslandoraGeoImage_' . $this->coverage_name . '.shp';
+
+      $ds_obj = $this->datastream('OBJ');
+      $ds_obj->getContent($file_path);
+
+      $workspace->createDataStore($this->coverage_name, $file_path);
+      unlink($file_path);
+    }
   }
 
   function get_base_maps() {
@@ -135,5 +150,9 @@ class IslandoraShapefile extends IslandoraObject {
 
       $this->base_maps[] = new IslandoraGeoImage($this->session, $this->geoserver_session, $result['object']['value']);
     }
+  }
+
+  function to_layer() {
+
   }
 }
