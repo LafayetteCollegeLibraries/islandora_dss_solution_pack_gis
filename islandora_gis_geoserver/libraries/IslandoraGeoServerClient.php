@@ -8,26 +8,11 @@ include_once __DIR__ . "/../vendor/autoload.php";
    *
    */
 
-/*
- $client = new GuzzleHttp\Client();
-$response = $client->get('http://guzzlephp.org');
-$res = $client->get('https://api.github.com/user', ['auth' =>  ['user', 'pass']]);
-echo $res->getStatusCode();
-// 200
-echo $res->getHeader('content-type');
-// 'application/json; charset=utf8'
-echo $res->getBody();
-// {"type":"User"...'
-var_export($res->json());
-// Outputs the JSON decoded data
-*/
-
 use Guzzle\Http\Client;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Guzzle\Plugin\Cookie\CookiePlugin;
 use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
 use Guzzle\Plugin\CurlAuth\CurlAuthPlugin;
-
 
 class IslandoraGeoServerSession {
 
