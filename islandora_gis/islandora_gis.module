@@ -298,6 +298,40 @@ function islandora_gis_object_has_exif_directory($object, $exif_directory) {
   return empty($output) or (preg_match('/Warning/', $output) and count($lines) == 1);
 }
 
+function islandora_gis_gdalinfo() {
+
+  $args = array_merge(array('/usr/bin/env gdalinfo'), func_get_args());
+  $invocation = escapeshellcmd(implode(' ', $args));
+
+  $output = array();
+  $return = exec($invocation, $output);
+  
+  $output = implode(PHP_EOL, $output);
+  
+  // Parse the output
+  $lines = split("/\n", $output);
+
+  $data = array();
+
+  //! @todo Extend for the parsing of unit, zunit, and elevation attributes
+  $fields = array('xmin' => '/Upper Left  \(([\-0-9\.]+),/',
+		  'ymin' => '/Upper Left  \([\-0-9\.]+, ([\-0-9\.]+)\)/',
+		  'xmax' => '/Lower Right \(([\-0-9\.]+),/',
+		  'ymax' => '/Lower Right \([\-0-9\.]+, ([\-0-9\.]+)\)/',
+		  'projection' => '/Coordinate System is\:' . PHP_EOL . 'PROJCS\["(.+?)",/',
+		  );
+  
+  foreach($fields as $field_name => $field_pattern) {
+
+    if(preg_match($field_pattern, $output, $m)) {
+      
+      $data[$field_name] = $m[1];
+    }
+  }
+
+  return $data;
+}
+
 /**
  * Using the GDAL, parse the GeoTIFF and update the Dublin Core Document with the necessary data
  *
@@ -305,21 +339,28 @@ function islandora_gis_object_has_exif_directory($object, $exif_directory) {
 function islandora_gis_object_update_georeferenced($object) {
 
   // Retrieve the GeoTIFF
-  $file = file_unmanaged_save_data($object['OBJ']->content, 'temporary://islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff');
+  //$file_path = file_unmanaged_save_data($object['OBJ']->content, 'temporary://islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff');
+  $file_path = '/tmp/islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff';
+  $object['OBJ']->getContent($file_path);
 
-  //GDALAllRegister();
+  GDALAllRegister();
 
   // Parse the GeoTIFF as a raster data set
-  $dataset = GDALOpen($file->uri, GA_ReadOnly);
-  if($dataset) {
-
-    //$dataset->GetGeoTransform($affine_transform);
+  $dataset = GDALOpen($file_path, GA_ReadOnly);
+  if($dataset and !islandora_gis_object_is_georeferenced($object)) {
 
     // Retrieve the SRS from the WKT
     $srs = new OGRSpatialReference($dataset->GetProjectionRef());
 
-    $dc_doc = new SimpleXmlElement($object['DC']->content);
+    $dc_doc = new DOMDocument();
+    $dc_doc->loadXML($object['DC']->content);
 
+    /**
+     * Due to the certain limitations of php5-gdal, these values must be parsed from the output streamed to STDOUT
+     *
+     */
+
+    /*
     // Iterate through all layers for the data set
     for($i=0;$i < $dataset->GetLayerCount(); $i++) {
 
@@ -329,9 +370,22 @@ function islandora_gis_object_update_georeferenced($object) {
       $dcmi_point = 'east=' . $layer->GetExtent()->minX . '; north=' . $layer->GetExtent()->minY . '; units=' . $srs->GetAttrValue('UNIT') . '; projection=' . $srs->GetAttrValue('PROJCS') . " name=" . $layer->GetName();
       $dc_doc->dc->addChild('dc:coverage', $dcmi_point);
     }
-    file_unmanaged_delete($file->uri);
+    */
 
-    $object['DC']->setContentFromString($dc_doc->asXml());
+    $data = islandora_gis_gdalinfo($file_path);
+
+    $dcmi_point = 'east=' . $data['xmin'] . '; north=' . $data['ymax'] . '; projection=' . $data['projection'] . "; name=" . $object->label;
+    $dc_doc->documentElement->appendChild( $dc_doc->createElementNS('http://purl.org/dc/elements/1.1/', 'dc:coverage', $dcmi_point) );
+
+    $bbox = 'xmin=' . $data['xmin'] . '; ymin=' . $data['ymin'] . '; xmax=' . $data['xmax'] . '; ymax=' . $data['ymax'];
+    $bbox_elem = $dc_doc->createElementNS('http://purl.org/dc/elements/1.1/', 'dc:coverage', $bbox);
+    $dc_doc->documentElement->appendChild( $bbox_elem );
+    $dc_doc->documentElement->appendChild( $dc_doc->createComment('This models the bounding box generated from the digital surrogate in the GeoTIFF.') );
+
+    //file_unmanaged_delete($file_path);
+    unlink($file_path);
+
+    $object['DC']->setContentFromString($dc_doc->saveXml());
   }
 }
 
@@ -345,12 +399,13 @@ function islandora_gis_object_is_georeferenced($object, $exif_directory = 'GTMod
   $result = FALSE;
 
   $dc_doc = new SimpleXmlElement($object['DC']->content);
+  $dc_doc->registerXPathNamespace('http://purl.org/dc/elements/1.1/', 'dc');
 
   // Test for DCMI points within the Dublin Core metadata
   // If these haven't been encoded, ignore them
-  $dc_type = $dc_doc->xpath('//dc:coverage[fn:starts-with(text(), "east=")]');
+  $dc_type = $dc_doc->xpath('//dc:coverage[starts-with(text(), "east=")]');
 
-  return empty($dc_type);
+  return !empty($dc_type);
 }
 
 /**

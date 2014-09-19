@@ -2,6 +2,7 @@ name = Islandora GIS
 description = "Islandora Module for the Management of GIS Material"
 package = Islandora
 dependencies[] = islandora
+dependencies[] = gdal
 dependencies[] = openlayers
 version = 7.x-1.1
 core = 7.x

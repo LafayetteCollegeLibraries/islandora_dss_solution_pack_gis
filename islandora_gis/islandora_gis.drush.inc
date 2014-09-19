@@ -48,7 +48,25 @@ function islandora_gis_drush_command() {
 	'aliases' => array()
 	);
 
+  $items['islandora-gis-update-image'] =
+  array('description' => dt('Ingest a compressed Esri Shapefile'),
+	'arguments' => array('arg1' => dt('File system path to the compressed Shapefile'),
+			     ),
+	'examples' => array('Standard example' => 'drush islandora-gis-ingest /opt/esri_store/shapefile.zip',
+			    'Complex example' => 'drush islandora-gis-ingest ~/Downloads/GlendaleAZ_Council_Districts.zip gis gis:glendale "Glendale Council Districts"'),
+	'aliases' => array()
+	);
+
   return $items;
+}
+
+function drush_islandora_gis_update_image($object_pid) {
+
+  // Instantiate the connection as the admin user
+  $connection = islandora_get_tuque_connection(user_load(1));
+  $object = islandora_object_load($object_pid);
+
+  islandora_gis_object_update_georeferenced($object);
 }
 
 /**
