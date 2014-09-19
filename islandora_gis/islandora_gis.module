@@ -253,6 +253,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
   }
 }
 
+
 /**
  * Implements hook_islandora_xml_form_builder_forms().
  */
@@ -280,4 +281,84 @@ function islandora_gis_islandora_content_model_forms_form_associations() {
 							'template' => FALSE,
 							),
 	       );
+}
+
+/**
+ * Function for determining whether or not a given Islandora Large Image Object manages an image in the GeoTIFF
+ *
+ */
+function islandora_gis_object_has_exif_directory($object, $exif_directory) {
+
+  $args = array('/usr/bin/env exiftool', '-m', "-'" . $exif_directory . '"', $image_file_path);
+  $invocation = escapeshellcmd(implode(' ', $args));
+  $output = passthru($invocation);
+
+  $lines = split("\n", $output);
+
+  return empty($output) or (preg_match('/Warning/', $output) and count($lines) == 1);
+}
+
+/**
+ * Using the GDAL, parse the GeoTIFF and update the Dublin Core Document with the necessary data
+ *
+*/
+function islandora_gis_object_update_georeferenced($object) {
+
+  // Retrieve the GeoTIFF
+  $file = file_unmanaged_save_data($object['OBJ']->content, 'temporary://islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff');
+
+  //GDALAllRegister();
+
+  // Parse the GeoTIFF as a raster data set
+  $dataset = GDALOpen($file->uri, GA_ReadOnly);
+  if($dataset) {
+
+    //$dataset->GetGeoTransform($affine_transform);
+
+    // Retrieve the SRS from the WKT
+    $srs = new OGRSpatialReference($dataset->GetProjectionRef());
+
+    $dc_doc = new SimpleXmlElement($object['DC']->content);
+
+    // Iterate through all layers for the data set
+    for($i=0;$i < $dataset->GetLayerCount(); $i++) {
+
+      $layer = $dataset->getLayer($i);
+
+      //! @todo Integrate parsing for the zunit and elevation values
+      $dcmi_point = 'east=' . $layer->GetExtent()->minX . '; north=' . $layer->GetExtent()->minY . '; units=' . $srs->GetAttrValue('UNIT') . '; projection=' . $srs->GetAttrValue('PROJCS') . " name=" . $layer->GetName();
+      $dc_doc->dc->addChild('dc:coverage', $dcmi_point);
+    }
+    file_unmanaged_delete($file->uri);
+
+    $object['DC']->setContentFromString($dc_doc->asXml());
+  }
+}
+
+/**
+ * Determine whether or not an Object has been georeferenced
+ * Please note that this requires that a dc:coverage element bearing a DCMI point as a value has been appended to the Dublin Core Document for the Object
+ *
+ */
+function islandora_gis_object_is_georeferenced($object, $exif_directory = 'GTModelType') {
+
+  $result = FALSE;
+
+  $dc_doc = new SimpleXmlElement($object['DC']->content);
+
+  // Test for DCMI points within the Dublin Core metadata
+  // If these haven't been encoded, ignore them
+  $dc_type = $dc_doc->xpath('//dc:coverage[fn:starts-with(text(), "east=")]');
+
+  return empty($dc_type);
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_object_ingested().
+ * Update the Dublin Core Document for GeoTIFF's
+ *
+ */
+function islandora_gis_islandora_sp_large_image_cmodel_islandora_object_ingested($object) {
+
+  return islandora_gis_object_update_georeferenced($object);
 }

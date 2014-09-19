@@ -102,9 +102,11 @@ class IslandoraShapefile extends IslandoraObject {
 
   function __construct($session,
 		       $geoserver_session = NULL,
-		       $pid = NULL, $object = NULL) {
+		       $pid = NULL, $object = NULL,
+		       $feature = NULL) {
 
     parent::__construct($session, $pid, $object);
+    $this->feature_type_name = preg_replace('/\:/', '_', $pid);
 
     $this->geoserver_session = $geoserver_session;
 
@@ -116,13 +118,19 @@ class IslandoraShapefile extends IslandoraObject {
       $this->client = new IslandoraGeoServerClient($geoserver_session);
       $workspace = $this->client->workspace($workspace);
 
-      //$file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
-      $file_path = '/tmp/IslandoraGeoImage_' . $this->coverage_name . '.shp';
+      // If a GeoServer Feature has been created, retrieve the compressed shapefile...
+      if(!is_null($feature)) {
 
-      $ds_obj = $this->datastream('OBJ');
-      $ds_obj->getContent($file_path);
+	$file_path = $feature->file_path;
+      } else { // ...and, otherwise, retrieve the compressed Shapefile from the Islandora Object.
 
-      $workspace->createDataStore($this->coverage_name, $file_path);
+	$file_path = '/tmp/IslandoraGeoImage_' . $this->feature_type_name . '.zip';
+
+	$ds_obj = $this->datastream('SHP');
+	$ds_obj->getContent($file_path);
+      }
+
+      $workspace->dataStore($this->feature_type_name, $file_path);
       unlink($file_path);
     }
   }

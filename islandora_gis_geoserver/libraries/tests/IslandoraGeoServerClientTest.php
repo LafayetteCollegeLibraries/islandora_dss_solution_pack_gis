@@ -2,7 +2,7 @@
 
   /**
    * @author griffinj@lafayette.edu
-   * The unit tests for the IslandoraGeoServer API
+   * The unit tests for the Islandora GeoServer API
    *
    */
 
@@ -261,17 +261,10 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
   public function testCreateCoverage() {
 
     $this->client = new IslandoraGeoServerClient($this->session);
-    //$workspace = $this->client->workspace('default');
-
-    //$workspace->coverageStores['test1'];
-
-    //$this->client->workspace = 'default';
     $workspace = $this->client->workspace('default');
 
     $file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
     $workspace->createCoverageStore('test2', $file_path);
-    //$this->assertNull();
-    //print get_class($workspace->coverageStores['test1']);
   }
 
   public function testDeleteCoverage() {

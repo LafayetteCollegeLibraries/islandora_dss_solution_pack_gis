@@ -1,42 +1,58 @@
-<?php namespace IslandoraGeoServer;
+<?php
+namespace IslandoraGeoServer\Cartaro;
 
 include_once __DIR__ . "/../vendor/autoload.php";
+use Guzzle\Http\Client;
 
-class CartaroFeature {
+class Feature {
 
-  public $url;
+  public $path;
+  public $file_path;
 
-  public function __construct($user, $pass,
+  private $fh;
+
+  //$user, $pass,
+  public function __construct(
 			      $outputFormat = 'shape-zip',
-			      $url = 'http://localhost:8080/geoserver/wfs',
+			      $host = 'http://localhost:8080',
+			      $path = 'geoserver',
 			      $service = 'wfs',
 			      $version = '2.0.0',
-			      $request = 'GetFeature') {
+			      $request = 'GetFeature',
+			      $file_path = '/tmp/CartaroFeature_shapefile.zip') {
 
-    /*
-http://example.com/geoserver/wfs?
-  service=wfs&
-  version=2.0.0&
-  request=GetFeature&
-     */
+    $this->path = $path;
+    $this->client = new Client($host);
 
-    $this->url = $url;
-    
-    
+    $this->params = array('service' => $service,
+			  'version' => $version,
+			  'request' => $request,
+			  'outputFormat' => $outputFormat);
+
+    $this->file_path;
+    $this->fh = fopen($file_path, 'w');
   }
 
-  public function read($typeName = '',
-		       $maxFeatures = '',
-		       $count = '',
-		       $sortBy = '',
-		       $featureId = '',
-		       $propertyName = array(),
-		       $srsName = '',
-		       $bbox = array()) {
+  public function read($params = array('typeName' => '',
+				       'maxFeatures' => '',
+				       'count' => '',
+				       'sortBy' => '',
+				       'featureId' => '',
+				       'propertyName' => array(),
+				       'srsName' => '',
+				       'bbox' => array())) {
 
-    $params = array();
+    $params = array_merge($this->params, $params);
 
-    $params['propertyName'] = implode(',', $bbox);
-    $params['bbox'] = implode(',', $bbox);
+    $request = $this->client->get('/' . $this->path . '/wfs?' . http_build_query($params),
+				  array(),
+				  array('save_to' => $this->fh));
+    $response = $request->send();
+  }
+
+  public function __destruct() {
+
+    fclose($this->fh);
+    unlink($this->file_path);
   }
 }

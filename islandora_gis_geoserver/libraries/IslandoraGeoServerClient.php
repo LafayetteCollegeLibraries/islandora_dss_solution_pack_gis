@@ -370,6 +370,11 @@ class GeoServerWorkspace extends GeoServerResource {
     return $coverage_store;
   }
 
+  public function coverageStore($name, $file_path = NULL) {
+
+    return createCoverageStore($name, $file_path);
+  }
+
   /**
    * Delete a coverage store
    *
@@ -389,7 +394,7 @@ class GeoServerWorkspace extends GeoServerResource {
    * Create a data store
    *
    */
-  public function createDataStore($name, $file_path = NULL) {
+  public function dataStore($name, $file_path = NULL) {
 
     $data_store = new GeoServerDataStore($this->client, $name, $this, $file_path);
     $this->dataStores[$name] = $data_store;
@@ -509,24 +514,21 @@ class GeoServerDatastore extends GeoServerResource {
       throw new \Exception("Failed to retrieve the data store $name");
     }
 
-    //print_r((string) $response);
-
-    print $response->getStatusCode();
-
     $data = $response->json();
-    print_r($data);
-
-    /*
     foreach($data['dataStore'] as $property => $value) {
 
       $values = array();
 
       switch($property) {
 	
-      case 'coverages':
+      case 'featureTypes':
 
 	// Retrieve the coverage stores
-	$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
+	//$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
+	print $this->base_path . '/' . $this->name . '/featuretypes.json';
+	exit(1);
+
+	/*
 	$data = $response->json();
 
 	if(array_key_exists('coverages', $data) and !empty($data['coverages'])) {
@@ -538,6 +540,7 @@ class GeoServerDatastore extends GeoServerResource {
 	  }
 	  $this->{$property} = $values;
 	}
+	*/
 	break;
 
       default:
@@ -545,7 +548,6 @@ class GeoServerDatastore extends GeoServerResource {
 	break;
       }
     }
-    */
 
     return $this;
   }
@@ -555,7 +557,7 @@ class GeoServerDatastore extends GeoServerResource {
    */
   function update($file, $extension = 'shp', $configure = 'first', $target = 'shp', $update = 'append', $charset = 'utf-8') {
 
-    $this->client->put($this->put_path, array());
+    //$this->client->put($this->put_path, array());
   }
 
   /**
@@ -563,7 +565,7 @@ class GeoServerDatastore extends GeoServerResource {
    */
   function delete($recurse = FALSE) {
 
-    $this->client->delete($this->base_path, array('recurse' => $recurse));
+    //$this->client->delete($this->base_path, array('recurse' => $recurse));
   }
 }
 
@@ -704,21 +706,6 @@ class GeoServerCoverageStore extends GeoServerResource {
     }
 
     return TRUE;
-  }
-
-  /**
-   * Create a coverage
-   *
-   */
-  public function createCoverage($name, $file_path) {
-
-    /*
-    //$this->coverageStores[$name] = new GeoServerCoverageStore($this->client, $name, $this);
-    if(!array_key_exists($name, $this->coverageStores)) {
-
-      $this->create($file_path);
-    }
-    */
   }
 }
 
