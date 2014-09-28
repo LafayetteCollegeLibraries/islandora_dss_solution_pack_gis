@@ -524,11 +524,15 @@ class GeoServerDatastore extends GeoServerResource {
       case 'featureTypes':
 
 	// Retrieve the coverage stores
-	//$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
+	// @todo To be implemented
+	/*
 	print $this->base_path . '/' . $this->name . '/featuretypes.json';
 	exit(1);
+	*/
 
 	/*
+	//$response = $this->client->get($this->base_path . '/' . $this->name . '/coverages.json', array(), array('content-type' => 'application/json'));
+
 	$data = $response->json();
 
 	if(array_key_exists('coverages', $data) and !empty($data['coverages'])) {

@@ -12,7 +12,7 @@
  * @see geoserver_openlayers_layers()
  *
  */
-function islandora_gis_layer_load_geoserver($object) {
+function islandora_gis_layer_load_geoserver_deprecated($object) {
 
   $ol_layers = array();
   $gs_layers = geoserver_layers_load();
@@ -36,8 +36,7 @@ function islandora_gis_layer_load_geoserver($object) {
       $ol_layer->title = $gs_layer->title;
       $ol_layer->description = t('Cached WMS layer of GeoServer layer !name',
 				 array('!name' => $gs_layer->name));
-      $ol_layer->data = array(
-			      'layer_type' => 'openlayers_layer_type_wms',
+      $ol_layer->data = array('layer_type' => 'openlayers_layer_type_wms',
 			      'base_url' => $url . 'gwc/service/wms',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
@@ -59,6 +58,7 @@ function islandora_gis_layer_load_geoserver($object) {
     }
 
     if ($openlayers['wfs']) {
+
       $style = $gs_layer->data['style'];
       $sld = isset($gs_styles[$style]) ? $gs_styles[$style]->data : '';
       $data = isset($openlayers['wfs_data']) ? $openlayers['wfs_data'] : array();

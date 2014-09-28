@@ -39,7 +39,7 @@ function islandora_gis_geoserver_drush_command() {
   array('description' => dt('Link GeoTIFF maps (Islandora Large Image Objects) to a Shapefile (Islandora Shapefile Object)'),
 	'arguments' => array('arg1' => dt(''), // @todo Implement
 			     ),
-	'examples' => array('Standard example' => '', // @todo Implement
+	'examples' => array('Standard example' => 'drush islandora-geoserver-link-maps lebaneseTown:shapefile1 lebaneseTown:rasterMap1 admin secret', // @todo Implement
 			    'Complex example' => ''), // @todo Implement
 	'aliases' => array()
 	);
@@ -63,6 +63,7 @@ function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id,
   $geoserver_session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
 
   $shapefile = new IslandoraShapefile($session, $geoserver_session, $object_id);
+  drush_log('testing', 'success');
 
   $workspace = variable_get('geoserver_workspace', '');
 
@@ -70,7 +71,9 @@ function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id,
   // @todo Refactor
   $workspace = empty($workspace) ? 'default' : $workspace;
 
+
   $map = new IslandoraGeoImage($session, $geoserver_session, $map_object_id, $workspace);
+
 
   $map->add_shapefile($shapefile);
   drush_log(dt('Successfully added the Shapefile Object ' . $object_id . ' as a dependent of the GeoTIFF base map ' . $map_object_id), 'success');

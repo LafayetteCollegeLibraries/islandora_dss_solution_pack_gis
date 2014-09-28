@@ -71,7 +71,7 @@ function islandora_gis_geoserver_user_login(&$edit, $account) {
   }
 }
 
-function islandora_gis_geoserver_base_maps_load($object) {
+function islandora_gis_geoserver_get_base_maps($object) {
 
   $connection = islandora_get_tuque_connection();
 
@@ -88,42 +88,110 @@ function islandora_gis_geoserver_base_maps_load($object) {
 		       'type' => 'sparql',
 		       );
 
-  $layers = array();
-  foreach($connection->repository->ri->query($query_array['query'], $query_array['type']) as $result) {
+  //$layers = array();
 
-    $pid = $result['object']['value'];
-    $coverage_name = preg_replace('/\:/', '_', $pid);
+  //foreach($connection->repository->ri->query($query_array['query'], $query_array['type']) as $result) {  
+  //return $connection->repository->ri->query($query_array['query'], $query_array['type']);
+  return array_map(function($result) {
+
+      return islandora_object_load($result['object']['value']);
+    }, $connection->repository->ri->query($query_array['query'], $query_array['type']));
+}
+
+/**
+ * Retrieve the maximum extent bounding box for Islandora Large Image Objects related to Islandora Shapefile Objects
+ *
+ */
+function islandora_gis_geoserver_max_extent($shp_object, $objects = NULL) {
+
+  if(is_null($objects)) {
+
+    $objects = islandora_gis_geoserver_get_base_maps($shp_object);
+  }
+
+  //$max_extent = array(-1, -1, 1, 1);
+  $max_extent = NULL;
+
+  if(!empty($objects)) {
+
+    $object = $objects[0];
+
+    $dc_doc = new SimpleXmlElement($object['DC']->content);
+    $dc_doc->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+
+    $elems = $dc_doc->xpath('//dc:coverage[starts-with(text(), "xmin=")]');
+    $dc_coverage = array_pop($elems);
+    $values = explode(';', (string) $dc_coverage);
+
+    $max_extent = array_map(function($value) {
+
+	preg_match('/[a-z]{4}\=(.+)/', $value, $m);
+	return $m[1];
+      }, $values);
+  }
+
+  return $max_extent;
+}
+
+/**
+ * Structure the Islandora Large Image Objects as WMS layers managed by the GeoServer
+ *
+ */
+function islandora_gis_geoserver_base_maps_load($object) {
+
+  $layers = array();
+
+  foreach(islandora_gis_geoserver_get_base_maps($object) as $base_map_object) {
+
+    //! @author griffinj@lafayette.edu
+    //$max_extent = islandora_gis_get_max_extent($obj);
+
+    //$coverage_name = preg_replace('/\:/', '_', $pid);
+
+    $coverage_name = preg_replace('/\:/', '_', $base_map_object->id);
 
     $layer = new stdClass();
     $layer->name = $coverage_name;
-    $layer->title = $result['title']['value'];
+    $layer->title = $base_map_object->label;
 
     $layer->data = array('openlayers' => array('wms' => TRUE,
-					       'wms_data' => array('isBaseLayer' => TRUE,
-								   'projection' => array('EPSG:900913', 'EPSG:3857'))));
+					       'wms_data' => array(
+								   //'isBaseLayer' => TRUE,
+								   'isBaseLayer' => FALSE,
+								   //'projection' => array('EPSG:900913', 'EPSG:3857'),
+								   'projection' => array('EPSG:4326'),
+								   //'maxExtent' => $max_extent
+								   )));
     $layers[] = $layer;
   }
+
+  // Ensure that the Features for the Shapefile Object itself are also retrieved
+  $coverage_name = preg_replace('/\:/', '_', $object->id);
+
+  $layer = new stdClass();
+  $layer->name = $coverage_name;
+  $layer->title = $object->label;
+
+  $layer->data = array('openlayers' => array('wfs' => TRUE,
+					     'wfs_data' => array(
+								 //'isBaseLayer' => TRUE,
+								 'isBaseLayer' => FALSE,
+								 //'projection' => array('EPSG:900913', 'EPSG:3857'),
+								 'projection' => array('EPSG:4326'),
+								 //'maxExtent' => $max_extent
+								 )));
+
+  $layers[] = $layer;
 
   return $layers;
 }
 
 /**
- * For generating geoserver layers using an Islandora Shapefile Object
+ * Structure the set of layers retrieved in relation to a given Islandora Shapefile Object
  * @see geoserver_layers_load()
  *
  */
 function islandora_gis_geoserver_layers_load() {
-
-  /*
-  ctools_include('export');
-
-  if ($reset) {
-    ctools_export_load_object_reset('geoserver_layers');
-  }
-
-
-  */
-  //$layers = ctools_export_load_object('geoserver_layers', 'all', array());
 
   $layers = array();
   $object_pid = variable_get('islandora_gis_view_object_pid', '');
@@ -134,36 +202,6 @@ function islandora_gis_geoserver_layers_load() {
     $session = islandora_dss_get_session();
     $geoserver_session = islandora_gis_geoserver_get_session();
     $object = islandora_object_load($object_pid);
-
-    /*
-    try {
-
-      $object = new IslandoraShapefile($session, $geoserver_session, $object_pid, $object);
-      //$map_objects = $object->get_base_maps();
-
-      foreach ($object->base_maps as $index => $base_map) {
-
-	$layer_object = $base_map->to_layer();
-	if ($layer_object) {
-
-	  $layers[$index] = $layer_object;
-	}
-      }
-    } catch(Exception $e) {
-
-      // Log the warning
-      // @todo Implement
-
-      // Attempt to retrieve the layers manually
-      foreach(islandora_gis_geoserver_base_maps_load($object) as $index => $base_map_layer) {
-	
-	if ($base_map_layer) {
-	  
-	  $layers[$index] = $base_map_layer;
-	}
-      }
-    }
-    */
 
     // Log the warning
     // @todo Implement

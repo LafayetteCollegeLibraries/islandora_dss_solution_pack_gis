@@ -115,6 +115,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
 
   //$map = islandora_gis_map_load($object);
   $map = array_merge($map, islandora_gis_map_load($object));
+  dpm($map);
 
   // Functionality for islandora_gis_geoserver
   // @todo Refactor with hooks
@@ -261,8 +262,7 @@ function islandora_gis_islandora_xml_form_builder_forms() {
 
   $module_path = drupal_get_path('module', 'islandora_gis');
   return array(
-	       'Shapefile MODS-OGP form' => array(
-						  'form_file' => "$module_path/xml/islandora_shapefile_mods_form.xml",
+	       'Shapefile MODS-OGP form' => array('form_file' => "$module_path/xml/islandora_shapefile_mods_form.xml",
 						  ),
 	       );
 }
@@ -309,7 +309,7 @@ function islandora_gis_gdalinfo() {
   $output = implode(PHP_EOL, $output);
   
   // Parse the output
-  $lines = split("/\n", $output);
+  $lines = explode("/\n", $output);
 
   $data = array();
 
@@ -395,8 +395,6 @@ function islandora_gis_object_update_georeferenced($object) {
  *
  */
 function islandora_gis_object_is_georeferenced($object, $exif_directory = 'GTModelType') {
-
-  $result = FALSE;
 
   $dc_doc = new SimpleXmlElement($object['DC']->content);
   $dc_doc->registerXPathNamespace('http://purl.org/dc/elements/1.1/', 'dc');

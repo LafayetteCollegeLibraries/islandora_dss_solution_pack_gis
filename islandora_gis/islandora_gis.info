@@ -4,6 +4,7 @@ package = Islandora
 dependencies[] = islandora
 dependencies[] = gdal
 dependencies[] = openlayers
+dependencies[] = geoserver
 version = 7.x-1.1
 core = 7.x
 files[] = tests/web_test_case.inc

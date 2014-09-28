@@ -67,8 +67,7 @@ function _islandora_gis_layer_load_geojson($object) {
   $layer->name = $layer_name;
   $layer->title = $layer_title;
   $layer->description = $layer_title; //@todo Refactor and pass a Dublin Core or MODS XPath text node
-  $layer->data = array(
-		       'resolutions' => openlayers_get_resolutions('EPSG:900913'),
+  $layer->data = array('resolutions' => openlayers_get_resolutions('EPSG:900913'),
 		       'serverResolutions' => openlayers_get_resolutions('EPSG:4326'),
 		       'layer_type' => 'openlayers_layer_type_geojson',
 		       'layer_handler' => 'geojson',
@@ -111,6 +110,7 @@ function islandora_gis_layer_load($ds_id, $object, $reset = FALSE) {
     return _islandora_gis_layer_load_kml($object);
   }
 }
+
 
 /**
  * Generate an OpenLayers Map Object from an Islandora Object
@@ -165,11 +165,11 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 								 'maximizeDefault' => 0,
 								  ),
 		     'openlayers_behavior_navigation' => array('zoomWheelEnabled' => 1,
-							      'zoomBoxEnabled' => 1,
-							      'documentDrag' => 0,
+							       'zoomBoxEnabled' => 1,
+							       'documentDrag' => 0,
 							       ),
 		     'openlayers_behavior_panzoombar' => array('zoomWorldIcon' => 0,
-							      'panIcons' => 1,
+							       'panIcons' => 1,
 							       ),
 		     'openlayers_behavior_popup' => array('layers' => array('islandora_layer' => 'islandora_layer',
 									   ),
@@ -189,8 +189,6 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 
   // Load the layer from the Islandora Object
   $islandora_layer = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $object);
-  //$layers['islandora_layer'] = $islandora_layer;
-
   $default_layer = 'mapquest_osm';
 
   $openlayers_maps->data = array('width' => 'auto',
@@ -203,7 +201,8 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 				 'behaviors' => $behaviors,
 				 'default_layer' => $default_layer,
 				 'layers' => $layers,
-				 'projection' => 'EPSG:3857',
+				 //'projection' => 'EPSG:3857',
+				 'projection' => 'EPSG:4326',
 				 'displayProjection' => 'EPSG:4326',
 				 'styles' => array('default' => 'default',
 						   'select' => 'default_select',
@@ -211,8 +210,14 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 						   ),
 				 'islandora_layers' => array(array('layer' => $islandora_layer,
 								   'callback' => '_islandora_gis_layers_process')),
-				 'minExtent' => array(-1, -1, 1, 1)
+				 'minExtent' => array(-1, -1, 1, 1),
+				 //'maxExtent' => $max_extent,
 				 );
+
+  if(module_exists('islandora_gis_geoserver')) {
+
+    $openlayers_maps->data['max_extent'] = islandora_gis_geoserver_max_extent($object);
+  }
 
   return $openlayers_maps->data;
 }
@@ -271,10 +276,8 @@ function islandora_gis_build_map($map = array()) {
   */
 
   $map['layers'] = _openlayers_layers_process($map['layers'], $map);
-
-  dpm($map);
-
   //$map['layers'] = array_merge($map['layers'], _islandora_gis_layers_process(array($islandora_layer), $map));
+
   // Retrieve the Layer Object from the Islandora Layer
   foreach($map['islandora_layers'] as $islandora_layer) {
 
@@ -284,14 +287,18 @@ function islandora_gis_build_map($map = array()) {
   $map['behaviors'] = _openlayers_behaviors_render($map['behaviors'], $map);
   $map['styles'] = _openlayers_styles_process($map['styles'], $map['layer_styles'], $map['layer_styles_select'], $map['layer_styles_temporary'], $map);
 
-  dpm($map);
-
   // Restrict map to its projection extent (data outwith cannot be represented).
   // Layer can additionally specfiy their maxExtent in case they use
   // non-default grids.
 
   $projection = openlayers_get_projection_by_identifier($map['projection']);
-  $map['maxExtent'] = $projection->getProjectedExtent();
+
+  /**
+   * @author griffinj
+   * Disabled in order to retrieve the bounding box
+   *
+   */
+  //$map['maxExtent'] = $projection->getProjectedExtent();
 
   // In case the layer offers the same projection as the map, use this and do not provide
   // projection definition to client. Otherwise rely on the client to reproject on the fly.
@@ -379,14 +386,15 @@ function islandora_gis_render_map_data($map = array()) {
      * @todo Resolve with GeoJSON and OpenStreetMaps base maps
      *
      */
+    /*
     openlayers_add_js_projection_definition(
       openlayers_get_projection_by_identifier('EPSG:3857')
     );
-    /*
+    */
     openlayers_add_js_projection_definition(
       openlayers_get_projection_by_identifier('EPSG:4326')
     );
-    */
+
   }
 
   // Return themed map if no errors found
@@ -418,7 +426,6 @@ function islandora_gis_render_map_data($map = array()) {
     openlayers_add_js_projection_definition(openlayers_get_projection_by_identifier($map['displayProjection']));
 
     $map['numZoomLevels'] = 64;
-    dpm($map);
 
     $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
     drupal_add_js($js, 'setting');
