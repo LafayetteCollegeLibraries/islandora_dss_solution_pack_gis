@@ -43,6 +43,22 @@ function islandora_gis_geoserver_drush_command() {
 			    'Complex example' => ''), // @todo Implement
 	'aliases' => array()
 	);
+  $items['islandora-geoserver-update-geotiff'] =
+  array('description' => dt(''),
+	'arguments' => array('arg1' => dt(''), // @todo Implement
+			     ),
+	'examples' => array('Standard example' => 'drush islandora-geoserver-update-geotiff lebaneseTown:rasterMap1 admin secret', // @todo Implement
+			    'Complex example' => ''), // @todo Implement
+	'aliases' => array()
+	);
+  $items['islandora-geoserver-update-shapefile'] =
+  array('description' => dt(''),
+	'arguments' => array('arg1' => dt(''), // @todo Implement
+			     ),
+	'examples' => array('Standard example' => 'drush islandora-geoserver-update-shapefile lebaneseTown:shapefile1 admin secret', // @todo Implement
+			    'Complex example' => ''), // @todo Implement
+	'aliases' => array()
+	);
 
   return $items;
 }
@@ -63,18 +79,58 @@ function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id,
   $geoserver_session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
 
   $shapefile = new IslandoraShapefile($session, $geoserver_session, $object_id);
-  drush_log('testing', 'success');
 
   $workspace = variable_get('geoserver_workspace', '');
-
   // Work-around for empty strings (default)
   // @todo Refactor
   $workspace = empty($workspace) ? 'default' : $workspace;
 
-
   $map = new IslandoraGeoImage($session, $geoserver_session, $map_object_id, $workspace);
-
-
   $map->add_shapefile($shapefile);
   drush_log(dt('Successfully added the Shapefile Object ' . $object_id . ' as a dependent of the GeoTIFF base map ' . $map_object_id), 'success');
+}
+
+/**
+ *
+ *
+ */
+function drush_islandora_gis_geoserver_islandora_geoserver_update_geotiff($object_id, $user, $pass, $url = NULL) {
+
+  // Instantiate the connection as the admin user
+  $connection = islandora_get_tuque_connection(user_load(1));
+  $session = new IslandoraSession($connection);
+
+  $url = is_null($url) ? geoserver_url() : $url;
+
+  $geoserver_session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
+
+  $workspace = variable_get('geoserver_workspace', '');
+  // Work-around for empty strings (default)
+  // @todo Refactor
+  $workspace = empty($workspace) ? 'default' : $workspace;
+
+  $map = new IslandoraGeoImage($session, $geoserver_session, $object_id, $workspace);
+  //$map->update();
+
+  drush_log(dt('Successfully updated the Islandora Large Image Object ' . $object_id), 'success');
+}
+
+/**
+ *
+ *
+ */
+function drush_islandora_gis_geoserver_islandora_geoserver_update_shapefile($object_id, $user, $pass, $url = NULL) {
+
+  // Instantiate the connection as the admin user
+  $connection = islandora_get_tuque_connection(user_load(1));
+  $session = new IslandoraSession($connection);
+
+  $url = is_null($url) ? geoserver_url() : $url;
+
+  $geoserver_session = new IslandoraGeoServer\IslandoraGeoServerSession($user, $pass, $url);
+
+  $shapefile = new IslandoraShapefile($session, $geoserver_session, $object_id);
+  //$shapefile->update();
+
+  drush_log(dt('Successfully updated the Shapefile Object ' . $object_id), 'success');
 }

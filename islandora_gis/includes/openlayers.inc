@@ -95,31 +95,50 @@ function _islandora_gis_layer_load_geojson($object) {
  * @return openlayers_layer_type|FALSE
  *   Layer export
  */
-function islandora_gis_layer_load($ds_id, $object, $reset = FALSE) {
+function islandora_gis_layer_load($ds_id, $objects, $reset = FALSE) {
 
-  // Default to KML
-  switch($ds_id) {
+  $output = array();
 
-  case 'JSON':
+  foreach($objects as $object) {
 
-    return _islandora_gis_layer_load_geojson($object);
-    break;
-  case 'KML':
-  default:
+    if(isset($object[$ds_id])) {
 
-    return _islandora_gis_layer_load_kml($object);
+      // Default to KML
+      switch($ds_id) {
+
+      case 'JSON':
+
+	//return _islandora_gis_layer_load_geojson($object);
+	$islandora_layer = _islandora_gis_layer_load_geojson($object);
+	break;
+      case 'KML':
+      default:
+
+	//return _islandora_gis_layer_load_kml($object);
+	$islandora_layer = _islandora_gis_layer_load_kml($object);
+      }
+
+      if(module_exists('islandora_gis_geoserver')) {
+
+	$islandora_layer->data['max_extent'] = islandora_gis_geoserver_max_extent($object);
+      }
+
+      $output[] = array('layer' => $islandora_layer,
+			'callback' => '_islandora_gis_layers_process');
+    }
   }
-}
 
+  return $output;
+}
 
 /**
  * Generate an OpenLayers Map Object from an Islandora Object
  * @param FedoraObject $object
  *
  */
-function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
+function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 
-  $map_title = $object->label;
+  //$map_title = $object->label;
   $map_name = preg_replace('/\s/', '_', strtolower($map_title));
   
   if($map_desc_xpath) {
@@ -188,7 +207,7 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 		  );
 
   // Load the layer from the Islandora Object
-  $islandora_layer = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $object);
+  //$islandora_layers = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $objects);
   $default_layer = 'mapquest_osm';
 
   $openlayers_maps->data = array('width' => 'auto',
@@ -201,6 +220,9 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 				 'behaviors' => $behaviors,
 				 'default_layer' => $default_layer,
 				 'layers' => $layers,
+
+				 //'layer_activated' => array(),
+
 				 //'projection' => 'EPSG:3857',
 				 'projection' => 'EPSG:4326',
 				 'displayProjection' => 'EPSG:4326',
@@ -208,16 +230,22 @@ function islandora_gis_map_load($object, $map_desc_xpath = NULL) {
 						   'select' => 'default_select',
 						   'temporary' => 'default',
 						   ),
+				 /*
 				 'islandora_layers' => array(array('layer' => $islandora_layer,
-								   'callback' => '_islandora_gis_layers_process')),
+				 'callback' => '_islandora_gis_layers_process')),
+				 */
+				 'islandora_layers' => array(),
+				 //'islandora_layers' => $islandora_layers,
 				 'minExtent' => array(-1, -1, 1, 1),
 				 //'maxExtent' => $max_extent,
 				 );
 
+  /*
   if(module_exists('islandora_gis_geoserver')) {
 
     $openlayers_maps->data['max_extent'] = islandora_gis_geoserver_max_extent($object);
   }
+  */
 
   return $openlayers_maps->data;
 }
@@ -279,10 +307,30 @@ function islandora_gis_build_map($map = array()) {
   //$map['layers'] = array_merge($map['layers'], _islandora_gis_layers_process(array($islandora_layer), $map));
 
   // Retrieve the Layer Object from the Islandora Layer
-  foreach($map['islandora_layers'] as $islandora_layer) {
+  foreach($map['islandora_layers'] as $index => $islandora_layer) {
 
-    $map['layers'][] = call_user_func($islandora_layer['callback'], array($islandora_layer['layer']), $map);
+    $layer = call_user_func($islandora_layer['callback'], array($islandora_layer['layer']), $map);
+
+    // Work-around for layers bearing identical titles
+    $layer_name = $layer['title'];
+    if(array_key_exists($layer['title'], $map['layers'])) {
+      
+      //$map['layers'][$layer['title'] . "($index)"] = $layer;
+      $layer_name = $layer['title'] . "_$index";
+    }
+
+    $map['layers'][$layer_name] = $layer;
+
+    // Generated the activated layers from the "visibility" property
+    if(!$layer['visibility']) {
+
+      $map['layer_activated'][$layer_name] = FALSE;
+    }
   }
+
+  // Generated the activated layers from the "visibility" property
+  dpm('trace7');
+  dpm($map['layers']);
 
   $map['behaviors'] = _openlayers_behaviors_render($map['behaviors'], $map);
   $map['styles'] = _openlayers_styles_process($map['styles'], $map['layer_styles'], $map['layer_styles_select'], $map['layer_styles_temporary'], $map);

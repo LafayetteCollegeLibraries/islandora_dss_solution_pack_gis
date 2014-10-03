@@ -33,3 +33,11 @@ function islandora_gis_preprocess_islandora_gis(&$variables) {
   $variables['theme_hook_suggestions'][] = 'islandora_gis__' . str_replace(':', '_', $islandora_object->id);
   $variables['parent_collections'] = islandora_get_parents_from_rels_ext($islandora_object);
 }
+
+/**
+ * Implements template_preprocess_HOOK().
+ */
+function islandora_gis_preprocess_islandora_basic_collection_wrapper(&$vars) {
+
+  dpm($vars);
+}

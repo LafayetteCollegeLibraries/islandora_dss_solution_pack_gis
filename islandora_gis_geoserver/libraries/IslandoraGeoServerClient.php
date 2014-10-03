@@ -58,6 +58,15 @@ class IslandoraGeoServerSession {
     $this->user = $user;
     $this->pass = $pass;
   }
+
+  /**
+   * Instantiate a new client
+   *
+   */
+  public function client() {
+
+    return new IslandoraGeoServerClient($this);
+  }
 }
 
 class IslandoraGeoServerClient {

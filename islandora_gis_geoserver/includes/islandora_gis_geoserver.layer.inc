@@ -158,8 +158,8 @@ function islandora_gis_geoserver_base_maps_load($object) {
 					       'wms_data' => array(
 								   //'isBaseLayer' => TRUE,
 								   'isBaseLayer' => FALSE,
-								   //'projection' => array('EPSG:900913', 'EPSG:3857'),
-								   'projection' => array('EPSG:4326'),
+								   'projection' => array('EPSG:900913', 'EPSG:3857'),
+								   //'projection' => array('EPSG:4326'),
 								   //'maxExtent' => $max_extent
 								   )));
     $layers[] = $layer;
@@ -194,8 +194,11 @@ function islandora_gis_geoserver_base_maps_load($object) {
 function islandora_gis_geoserver_layers_load() {
 
   $layers = array();
-  $object_pid = variable_get('islandora_gis_view_object_pid', '');
-  if(!empty($object_pid)) {
+  //$object_pid = variable_get('islandora_gis_view_object_pid', '');
+  $object_pids = variable_get('islandora_gis_view_object_pids', '');
+
+  //if(!empty($object_pid)) {
+  foreach($object_pids as $object_pid) {
 
     //$object = islandora_object_load($object_pid);
 
@@ -207,8 +210,9 @@ function islandora_gis_geoserver_layers_load() {
     // @todo Implement
 
     // Attempt to retrieve the layers manually
+    //! @todo Rename (one is no longer retrieving base maps, but, WMS and WFS layers)
     foreach(islandora_gis_geoserver_base_maps_load($object) as $index => $base_map_layer) {
-	
+      
       if ($base_map_layer) {
 	  
 	$layers[$index] = $base_map_layer;

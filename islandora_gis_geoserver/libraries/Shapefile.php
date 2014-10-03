@@ -19,7 +19,7 @@ define('FEDORA_RELS_EXT_URI', 'info:fedora/fedora-system:def/relations-external#
 
 class IslandoraGeoImage extends IslandoraLargeImage {
 
-  public $geoserver_session;
+  //public $geoserver_client;
   public $shapefiles;
   public $coverage_name;
 
@@ -28,7 +28,7 @@ class IslandoraGeoImage extends IslandoraLargeImage {
   function __construct($islandora_session,
 		       $geoserver_session = NULL,
 		       $pid = NULL,
-		       $workspace = 'default',
+		       $workspace_name = 'default',
 		       $object = NULL) {
 
     parent::__construct($islandora_session, $pid, $object);
@@ -41,20 +41,50 @@ class IslandoraGeoImage extends IslandoraLargeImage {
       throw new Exception("Failed to pass a tuque FedoraObject to the IslandoraGeoImage constructor");
     }
 
+    // If a GeoServer Session Object was passed to the constructor, retrieve the workspace
     if(!is_null($geoserver_session)) {
 
-      $this->client = new IslandoraGeoServerClient($geoserver_session);
-      $workspace = $this->client->workspace($workspace);
+      //! @todo All Client instances should be retrieved from a single Session Object
+      //$this->geoserver_client = new IslandoraGeoServerClient($geoserver_session);
+      //$geoserver_client = new IslandoraGeoServerClient($geoserver_session);
+      $geoserver_client = $geoserver_session->client();
 
-      //$file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
-      $file_path = '/tmp/IslandoraGeoImage_' . $this->coverage_name . '.tiff';
+      //! @todo Equally, all workspaces should bear a one-to-one relationship with each Session Object
+      $this->workspace = $geoserver_client->workspace($workspace_name);
 
-      $ds_obj = $this->datastream('OBJ');
-      $ds_obj->getContent($file_path);
-
-      $workspace->createCoverageStore($this->coverage_name, $file_path);
-      unlink($file_path);
+      $this->push();
     }
+  }
+
+  /**
+   * Update the state of the GeoServer Coverage using the Islandora Large Image Object
+   *
+   */
+  private function push() {
+
+    //$file_path = '/var/www/drupal/sites/all/modules/islandora_dss_solution_pack_gis/islandora_gis_geoserver/eapl-sanborn-easton-1919_010_modified.tif';
+    $file_path = '/tmp/IslandoraGeoImage_' . $this->coverage_name . '.tiff';
+
+    $ds_obj = $this->datastream('OBJ');
+    $ds_obj->getContent($file_path);
+
+    $this->workspace->createCoverageStore($this->coverage_name, $file_path);
+    unlink($file_path);
+  }
+
+  /**
+   * Update the state of the GeoServer Coverage using the Islandora Large Image Object
+   *
+   */
+  function update() {
+
+    $file_path = '/tmp/IslandoraGeoImage_' . $this->coverage_name . '.tiff';
+
+    $ds_obj = $this->datastream('OBJ');
+    $ds_obj->getContent($file_path);
+
+    $this->workspace->updateCoverageStore($this->coverage_name, $file_path);
+    unlink($file_path);
   }
 
   function add_shapefile($shapefile) {
@@ -100,10 +130,13 @@ class IslandoraShapefile extends IslandoraObject {
   public $geoserver_session;
   public $base_maps;
 
+  private $feature;
+
   function __construct($session,
 		       $geoserver_session = NULL,
 		       $pid = NULL, $object = NULL,
-		       $workspace = NULL,
+		       //$workspace = NULL,
+		       $workspace = 'default',
 		       $feature = NULL) {
 
     parent::__construct($session, $pid, $object);
@@ -116,6 +149,17 @@ class IslandoraShapefile extends IslandoraObject {
 
     if(!is_null($geoserver_session)) {
 
+      //! @todo All Client instances should be retrieved from a single Session Object
+      //$this->geoserver_client = new IslandoraGeoServerClient($geoserver_session);
+      //$geoserver_client = new IslandoraGeoServerClient($geoserver_session);
+      $geoserver_client = $geoserver_session->client();
+
+      //! @todo Equally, all workspaces should bear a one-to-one relationship with each Session Object
+      $this->workspace = $geoserver_client->workspace($workspace_name);
+
+      $this->push();
+
+      /*
       $this->client = new IslandoraGeoServerClient($geoserver_session);
 
       if(is_null($workspace)) {
@@ -137,14 +181,39 @@ class IslandoraShapefile extends IslandoraObject {
 	// @todo Resolve
 	//$ds_obj = $this->datastream('SHP');
 	//$ds_obj->getContent($file_path);
-	$ds_obj = $this->object['OBJ'];
+
+	//$ds_obj = $this->object['OBJ'];
+	$ds_obj = $this->object['SHP'];
+
 	$ds_obj->getContent($file_path);
       }
 
-
       $workspace->dataStore($this->feature_type_name, $file_path);
       unlink($file_path);
+      */
     }
+  }
+
+  private function push() {
+
+    // If a GeoServer Feature has been created, retrieve the compressed shapefile...
+    if(!is_null($this->feature)) {
+
+      $file_path = $this->feature->file_path;
+    } else { // ...and, otherwise, retrieve the compressed Shapefile from the Islandora Object.
+
+      $file_path = '/tmp/IslandoraGeoImage_' . $this->feature_type_name . '.zip';
+      //$this->load();
+
+      //! @todo Resolve
+      //$ds_obj = $this->datastream('SHP');
+      $ds_obj = $this->object['SHP'];
+
+      $ds_obj->getContent($file_path);
+    }
+    
+    $workspace->dataStore($this->feature_type_name, $file_path);
+    unlink($file_path);
   }
 
   function get_base_maps() {

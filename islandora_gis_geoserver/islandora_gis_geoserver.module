@@ -76,9 +76,18 @@ function islandora_gis_geoserver_get_session($user = 'admin', $pass = 'secret', 
  * Implements hook_islandora_gis_map_load_alter().
  *
  */
-function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map) {
+function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map, $layer_count) {
 
-  dpm($map);
-  $map['islandora_layers'] = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers());
+  $map['islandora_layers'] = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers($layer_count));
+  
+  /*
+  // Resolve visibility issues here
+  foreach($map['islandora_layers'] as &$islandora_layer) {
+
+    $islandora_layer['layer']->data['visibility']
+  }
+  */
+
+  dpm('trace4');
   dpm($map);
 }

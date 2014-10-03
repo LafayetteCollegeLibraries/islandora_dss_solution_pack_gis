@@ -9,7 +9,7 @@
 /**
  * Implements hook_openlayers_layers().
  */
-function _islandora_gis_geoserver_openlayers_layers() {
+function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
   $ol_layers = array();
   //$gs_layers = geoserver_layers_load();
@@ -19,6 +19,18 @@ function _islandora_gis_geoserver_openlayers_layers() {
 
   $workspace = empty($workspace) ? 'default' : $workspace;
   $url .= $workspace . '/';
+
+  // Ensures that, if there are multiple WFS layers, all shall be disabled by default
+  // Provides a work-around for GEO-52
+
+  /*
+  $wfs_layer_count = count(array_filter(array_values($gs_layers), function($gs_layer) {
+
+	return array_key_exists('wfs', $gs_layer->data['openlayers']);
+      } ));
+  */
+
+  //dpm($wfs_layer_count);
 
   foreach (array_values($gs_layers) as $gs_layer) {
 
@@ -43,8 +55,10 @@ function _islandora_gis_geoserver_openlayers_layers() {
 			      'geoserver_wms' => TRUE,
 			      'base_url' => $url . 'wms',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
-			      //'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
-			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:4326'),
+			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
+			      //'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:4326'),
+			      //'projection' => array('EPSG:2272'),
+			      //'projection' => array('EPSG:4326'),
 			      'params' => array('isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 						'buffer' => '2',
 						'ratio' => '1.5',
@@ -53,18 +67,24 @@ function _islandora_gis_geoserver_openlayers_layers() {
 			      'options' => array('TRANSPARENT' => 'true',
 						 'exceptions' => 'application/vnd.ogc.se_inimage',
 						 'format' => 'image/png',
-						 //'layers' => array($workspace . ':' . $gs_layer->name),
-						 //'layers' => array($workspace . ':' . 'easton_pa_ne'),
-						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified'),
-						 'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v4'),
+						 'layers' => array($workspace . ':' . $gs_layer->name),
+						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5'),
+						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5_epsg_4326'),
+						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5_epsg_3857'),
+						 //'layers' => array($workspace . ':' . ''),
 						 'styles' => '',
 						 //'numZoomLevels' => 36 // Zoom levels
+						 //'numZoomLevels' => 60 // Zoom levels
 						 ),
 			      // @author griffinj
 			      // This must be overridden either at the layer of the map or within the JavaScript
 			      //
 			      //'numZoomLevels' => 36, // Zoom levels
-			      'maxResolution' => 0.17578125, // This must be generated using the bounding box
+			      'numZoomLevels' => 60, // Zoom levels
+
+			      //'maxResolution' => 0.17578125, // This must be generated using the bounding box,
+			      'maxResolution' => 0.3, // This must be generated using the bounding box,
+			      'maxExtent' => array(-8373330.315, 4965998.047, -8371641.131, 4967177.293) // Specific to the projection
 			      );
 
       dpm($ol_layer);
@@ -118,10 +138,9 @@ function _islandora_gis_geoserver_openlayers_layers() {
 			      'sld' => '',
 			      //'url' => $url . $workspace . '/ows',
 			      'url' => $url . 'wfs',
-			      //'typeName' => $workspace . ':' . $gs_layer->name,
-			      //'typeName' => 'ExamplePoints_v1_prj',
+			      'typeName' => $workspace . ':' . $gs_layer->name,
 			      //'typeName' => 'ExamplePoints_b_v1_prj',
-
+			      
 			      //'typeName' => 'States_CottonSeedMills_1860_WGS84',
 			      //'typeName' => 'States_CottonSeedMills_1880_WGS84',
 			      //'typeName' => 'States_CottonSeedMills_1900_WGS84',
@@ -143,11 +162,11 @@ function _islandora_gis_geoserver_openlayers_layers() {
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 			      //'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
 			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:4326'),
+
+			      'visibility' => $wfs_layer_count == 1 // Ensures that, for cases in which multiple WFS layers are available, all are disabled by default
 			      );
 
-      //$ol_layers[$ol_layer->name] = $ol_layer;
-
-      dpm($ol_layer);
+      //dpm($ol_layer);
 
       $ol_layers[] = array('layer' => $ol_layer,
 			   'callback' => '_islandora_gis_layers_process');

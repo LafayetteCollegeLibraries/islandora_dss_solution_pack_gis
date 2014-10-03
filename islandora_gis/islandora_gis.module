@@ -98,13 +98,62 @@ function islandora_gis_theme($existing, $type, $theme, $path) {
   );
 }
 
-
-
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
  *
  */
-function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($object) {
+function islandora_gis_islandora_collectionCModel_islandora_view_object($object) {
+
+  dpm($object);
+
+  $policy = new CollectionPolicy($object['COLLECTION_POLICY']->content);
+  $policy_content_models = $policy->getContentModels();
+
+  dpm($policy_content_models);
+
+  if(isset($policy_content_models['islandora:sp_shapefile_cmodel'])) {
+
+    $members = islandora_basic_collection_get_objects($object);
+
+    /*
+    foreach ($members as $member) {
+
+      $content_model = islandora_object_load($member['content']['value']);
+      if (isset($rows[$content_model->id])) {
+
+	$rows[$content_model->id][1]++;
+      } else {
+
+	$link = l($content_model->label, "islandora/object/{$content_model->id}");
+	$rows[$content_model->id] = array($link, 1);
+      }
+
+      dpm($member);
+    }
+    */
+
+    $map_output = islandora_gis_render_objects(array_map(function($e) {
+
+	  return islandora_object_load($e['object']['value']);
+	}, $members), $object->label);
+
+    //module_load_include('inc', 'islandora_gis', 'includes/openlayers');
+
+    //$map_output = islandora_gis_render_objects($members);
+    $output = theme('islandora_gis', array('islandora_object' => $object, 'islandora_content' => $map_output));
+    return array('' => $output);
+  }
+}
+
+/*
+function islandora_basic_collection_islandora_collectionCModel_islandora_view_object(FedoraObject $object) {
+
+  $output = theme('islandora_basic_collection_wrapper', array('islandora_object' => $object));
+  return array('Collection View' => $output);
+}
+ */
+
+function islandora_gis_render_objects($objects, $map_title) {
 
   module_load_include('inc', 'islandora_gis', 'includes/openlayers');
 
@@ -113,19 +162,42 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
   // Hook for islandora_gis_map_load_preprocess_alter
   drupal_alter('islandora_gis_map_load_preprocess', $map);
 
-  //$map = islandora_gis_map_load($object);
-  $map = array_merge($map, islandora_gis_map_load($object));
-  dpm($map);
+  // Work-around for cases in which a single Object instance is passed
+  if(!is_array($objects)) {
+
+    $objects = array($objects);
+  }
 
   // Functionality for islandora_gis_geoserver
   // @todo Refactor with hooks
-  variable_set('islandora_gis_view_object_pid', $object->id);
+  //variable_set('islandora_gis_view_object_pid', $object->id);
+  variable_set('islandora_gis_view_object_pids', array_map(function($object) {
 
-  // Hook for islandora_gis_map_load_alter
-  drupal_alter('islandora_gis_map_load', $map);
+	return $object->id;
+      }, $objects));
+
+  //$map = islandora_gis_map_load($object);
+  $map = array_merge($map, islandora_gis_map_load($objects, $map_title));
+  dpm($map);
+
+  foreach($objects as $object) {
+
+    // Hook for islandora_gis_map_load_alter
+    drupal_alter('islandora_gis_map_load', $map, count($objects));
+  }
 
   $map_output = islandora_gis_render_map_data($map);
 
+  return $map_output;
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_view_object().
+ *
+ */
+function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($object) {
+
+  $map_output = islandora_gis_render_objects(array($object), $object->label);
   $output = theme('islandora_gis', array('islandora_object' => $object, 'islandora_content' => $map_output));
   return array('' => $output);
 }
