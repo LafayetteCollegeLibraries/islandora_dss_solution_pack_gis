@@ -99,6 +99,95 @@ function islandora_gis_theme($existing, $type, $theme, $path) {
 }
 
 /**
+ * Set the ID of a Feature linked to a given Islandora Object
+ * @todo Migrate to islandora_gis_geoserver
+ *
+ */
+function islandora_gis_set_feature_id($object, $feature_id) {
+
+  $ds_dc = $object['DC'];
+  $dc_doc = new DOMDocument();
+  $dc_doc->loadXML($ds_dc->content);
+
+  $workspace_name = variable_get('geoserver_workspace', 'default');
+  $workspace_name = empty($workspace_name) ? 'default' : $workspace_name;
+
+  $dc_doc->documentElement->appendChild($dc_doc->createElementNS('http://purl.org/dc/elements/1.1/', 'dc:relation', htmlentities(geoserver_url() . $workspace_name . '/wfs?request=GetFeature&featureID=' . $feature_id)));
+  $dc_doc->documentElement->appendChild( $dc_doc->createComment('This captures the WFS Feature ID of a related resource.') );
+
+  //! @todo Cache the updated relationship
+
+  return $ds_dc->setContentFromString($dc_doc->saveXml());
+}
+
+/**
+ * Retrieve the ID of a Feature linked to a given Islandora Object
+ * @todo Migrate to islandora_gis_geoserver
+ */
+function islandora_gis_get_feature_id($object) {
+
+  module_load_include('inc', 'islandora', 'includes/utilities');
+
+  //! @todo Cache the results
+
+  $workspace_name = variable_get('geoserver_workspace', 'default');
+  $workspace_name = empty($workspace_name) ? 'default' : $workspace_name;
+  $feature_id_uri_fragment = geoserver_url() . $workspace_name . '/wfs?request=GetFeature&featureID=' . preg_replace('/\:/', '_', $object->id) . '.';
+
+  $feature_id_uri_pattern = preg_quote($feature_id_uri_fragment);
+  $feature_id_uri_pattern = preg_replace('/\\\/', '\\\\\\', $feature_id_uri_pattern);
+  $feature_id_uri_pattern = preg_replace('/\//', '\\\\\\/', $feature_id_uri_pattern);
+
+  $query = 'SELECT ?subject
+     FROM <#ri>
+     WHERE {
+            ?subject <dc:relation> ?object .
+            FILTER(regex(str(?object), "' . $feature_id_uri_pattern . '"))
+     }';
+
+  $query_array = array(
+    'query' => $query,
+    'type' => 'sparql',
+    'pid' => $object->id,
+  );
+
+  $feature_map = array();
+
+  try {
+
+    $results = $object->repository->ri->query($query_array['query'], $query_array['type']);
+    if(!empty($results)) {
+
+      $result = array_shift($results);
+      $image_object = islandora_object_load($result['subject']['value']);
+
+      $dc_doc = new SimpleXMLElement($image_object['DC']->content);
+
+      // Retrieve the URL for the related resource
+      $dc_doc->registerXPathNamespace('http://purl.org/dc/elements/1.1/', 'dc');
+      $dc_relations = $dc_doc->xpath('//dc:relation[starts-with(text(), "' . geoserver_url() . '")]');
+
+      $feature_id = NULL;
+      if(!empty($dc_relations)) {
+
+	$dc_relation = array_shift($dc_relations);
+
+	if(preg_match('/featureID\=(.+)?/', (string) $dc_relation, $m)) {
+
+	  $feature_id = $m[1];
+	  $feature_map[$feature_id] = $image_object->id;
+	}
+      }
+    }
+  } catch (Exception $e) {
+
+    drupal_set_message(t('Islandora Error getting related objects for %s', array('%s' => $object->id)), 'error');
+  }
+
+  return $feature_map;
+}
+
+/**
  * Implements hook_CMODEL_PID_islandora_view_object().
  *
  */
@@ -132,10 +221,37 @@ function islandora_gis_islandora_collectionCModel_islandora_view_object($object)
     }
     */
 
-    $map_output = islandora_gis_render_objects(array_map(function($e) {
+    /*
+    $member_objects = array_map(function($e) {
 
-	  return islandora_object_load($e['object']['value']);
-	}, $members), $object->label);
+	return islandora_object_load($e['object']['value']);
+      }, $members);
+    */
+
+    $islandora_feature_map = array();
+    $member_objects = array();
+
+    foreach($members as $member) {
+
+      $object = islandora_object_load($member['object']['value']);
+      $member_objects[] = $object;
+
+      /*
+      $feature_id = islandora_gis_get_feature_id($object);
+
+      if(!is_null($feature_id)) {
+
+	$islandora_feature_map[$feature_id] = $object->id;
+      }
+      */
+      $islandora_feature_map = array_merge($islandora_feature_map, islandora_gis_get_feature_id($object));
+    }
+
+    dpm($islandora_feature_map);
+
+    variable_set('islandora_gis_geoserver_islandora_feature_map', $islandora_feature_map);
+
+    $map_output = islandora_gis_render_objects($member_objects, $object->label);
 
     //module_load_include('inc', 'islandora_gis', 'includes/openlayers');
 

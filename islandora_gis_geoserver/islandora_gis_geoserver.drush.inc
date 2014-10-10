@@ -43,6 +43,16 @@ function islandora_gis_geoserver_drush_command() {
 			    'Complex example' => ''), // @todo Implement
 	'aliases' => array()
 	);
+
+  $items['islandora-geoserver-link-features'] =
+  array('description' => dt('Link Islandora Large Image Objects to a WFS geospatial features'),
+	'arguments' => array('arg1' => dt(''), // @todo Implement
+			     ),
+	'examples' => array('Standard example' => 'drush islandora-geoserver-link-features lebaneseTown:image1 lebaneseTown',
+			    'Complex example' => ''), // @todo Implement
+	'aliases' => array()
+	);
+
   $items['islandora-geoserver-update-geotiff'] =
   array('description' => dt(''),
 	'arguments' => array('arg1' => dt(''), // @todo Implement
@@ -88,6 +98,19 @@ function drush_islandora_gis_geoserver_islandora_geoserver_link_maps($object_id,
   $map = new IslandoraGeoImage($session, $geoserver_session, $map_object_id, $workspace);
   $map->add_shapefile($shapefile);
   drush_log(dt('Successfully added the Shapefile Object ' . $object_id . ' as a dependent of the GeoTIFF base map ' . $map_object_id), 'success');
+}
+
+/**
+ * For linking Islandora Objects with individual geospatial Features
+ *
+ */
+function drush_islandora_gis_geoserver_islandora_geoserver_link_features($object_pid, $feature_id) {
+
+  $object = islandora_object_load($object_pid);
+  if($object) {
+
+    islandora_gis_set_feature_id($object, $feature_id);
+  }
 }
 
 /**

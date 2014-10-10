@@ -31,6 +31,7 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
   */
 
   //dpm($wfs_layer_count);
+  dpm($gs_layers);
 
   foreach (array_values($gs_layers) as $gs_layer) {
 
@@ -76,6 +77,8 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 						 //'numZoomLevels' => 36 // Zoom levels
 						 //'numZoomLevels' => 60 // Zoom levels
 						 ),
+			      'visibility' => TRUE, // Forced for multiple raster layers
+
 			      // @author griffinj
 			      // This must be overridden either at the layer of the map or within the JavaScript
 			      //
@@ -133,12 +136,38 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 				 //array('!name' => $gs_layer->name . ' (GeoServer)'));
 				 array('!name' => '(GeoServer)'));
 
+      // Extending this to providing a mapping between web feature names and Islandora Objects
+      //! @todo Refactor
+      $object_feature_map = array(
+
+				  //'pureFood_2' => 'States_CottonSeedMills_1880_WGS84_simple_2',
+				  //'pureFood_3' => 'States_CottonSeedMills_1900_WGS84_simple_2',
+
+				  //'pureFood_1' => 'US_county_cotton_1880_WGS84_simple',
+				  //'pureFood_6' => 'US_county_cotton_1900_WGS84_simple',
+				  'pureFood_7' => 'US_state_1860_WGS84_simple',
+				  //'pureFood_8' => 'US_county_cotton_1880_WGS84_simple',
+				  //'pureFood_9' => 'US_county_cotton_1900_WGS84_simple',
+
+				  'pureFood_1' => 'States_CottonSeedMills_1860_WGS84_simple_2',
+				  'pureFood_2' => 'States_CottonSeedMills_1880_WGS84_simple_2',
+				  'pureFood_3' => 'States_CottonSeedMills_1900_WGS84_simple_2',
+				  'pureFood_4' => 'US_county_cotton_1860_WGS84_simple_3',
+				  'pureFood_5' => 'US_county_cotton_1880_WGS84_simple_2',
+				  'pureFood_6' => 'US_county_cotton_1900_WGS84_simple_2',
+				  );
+      
+      $typeName = array_key_exists($gs_layer->name, $object_feature_map) ? $object_feature_map[$gs_layer->name] : $gs_layer->name;
+      dpm('trace: ' . $typeName);
+
       $ol_layer->data = array('attribution' =>  isset($gs_layer->data['attribution']) ? $gs_layer->data['attribution'] : NULL,
 			      'layer_type' => 'openlayers_layer_type_geoserver_wfs',
 			      'sld' => '',
 			      //'url' => $url . $workspace . '/ows',
 			      'url' => $url . 'wfs',
-			      'typeName' => $workspace . ':' . $gs_layer->name,
+			      //'typeName' => $workspace . ':' . $gs_layer->name,
+			      'typeName' => $typeName,
+
 			      //'typeName' => 'ExamplePoints_b_v1_prj',
 			      
 			      //'typeName' => 'States_CottonSeedMills_1860_WGS84',

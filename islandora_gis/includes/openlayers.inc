@@ -203,7 +203,7 @@ function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 		     );
 
   $layers = array('mapquest_osm' => 'mapquest_osm',
-		  'mapquest_openaerial' => 'mapquest_openaerial',
+		  'google_satellite' => 'google_satellite',
 		  );
 
   // Load the layer from the Islandora Object
@@ -327,10 +327,6 @@ function islandora_gis_build_map($map = array()) {
       $map['layer_activated'][$layer_name] = FALSE;
     }
   }
-
-  // Generated the activated layers from the "visibility" property
-  dpm('trace7');
-  dpm($map['layers']);
 
   $map['behaviors'] = _openlayers_behaviors_render($map['behaviors'], $map);
   $map['styles'] = _openlayers_styles_process($map['styles'], $map['layer_styles'], $map['layer_styles_select'], $map['layer_styles_temporary'], $map);

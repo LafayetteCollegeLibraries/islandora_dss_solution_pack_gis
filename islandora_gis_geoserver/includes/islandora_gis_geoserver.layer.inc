@@ -200,7 +200,8 @@ function islandora_gis_geoserver_layers_load() {
   //if(!empty($object_pid)) {
   foreach($object_pids as $object_pid) {
 
-    //$object = islandora_object_load($object_pid);
+    dpm('trace5');
+    dpm($object_pid);
 
     $session = islandora_dss_get_session();
     $geoserver_session = islandora_gis_geoserver_get_session();
@@ -215,10 +216,13 @@ function islandora_gis_geoserver_layers_load() {
       
       if ($base_map_layer) {
 	  
-	$layers[$index] = $base_map_layer;
+	//$layers[$index] = $base_map_layer;
+	$layers[] = $base_map_layer;
       }
     }
   }
 
+  dpm('trace6');
+  dpm($layers);
   return $layers;
 }
