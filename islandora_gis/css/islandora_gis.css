@@ -1,0 +1,10 @@
+/**
+ * Styling for module-specific markup
+ * @author griffinj@lafayette.edu
+ *
+ */
+
+.olFramedCloudPopupContent .islandora-gis-metadata {
+
+    background-color: rgba(255, 255, 255, 0.6);
+}
