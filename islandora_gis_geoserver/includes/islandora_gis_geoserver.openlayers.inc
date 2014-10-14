@@ -69,10 +69,6 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 						 'exceptions' => 'application/vnd.ogc.se_inimage',
 						 'format' => 'image/png',
 						 'layers' => array($workspace . ':' . $gs_layer->name),
-						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5'),
-						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5_epsg_4326'),
-						 //'layers' => array($workspace . ':' . 'eapl-sanborn-easton-1919_008-011+014-016_modified_v5_epsg_3857'),
-						 //'layers' => array($workspace . ':' . ''),
 						 'styles' => '',
 						 //'numZoomLevels' => 36 // Zoom levels
 						 //'numZoomLevels' => 60 // Zoom levels
@@ -158,7 +154,6 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 				  );
       
       $typeName = array_key_exists($gs_layer->name, $object_feature_map) ? $object_feature_map[$gs_layer->name] : $gs_layer->name;
-      dpm('trace: ' . $typeName);
 
       $ol_layer->data = array('attribution' =>  isset($gs_layer->data['attribution']) ? $gs_layer->data['attribution'] : NULL,
 			      'layer_type' => 'openlayers_layer_type_geoserver_wfs',

@@ -292,16 +292,19 @@ function islandora_gis_render_objects($objects, $map_title) {
   // Functionality for islandora_gis_geoserver
   // @todo Refactor with hooks
   //variable_set('islandora_gis_view_object_pid', $object->id);
+  /*
   variable_set('islandora_gis_view_object_pids', array_map(function($object) {
 
 	return $object->id;
       }, $objects));
+  */
 
   //$map = islandora_gis_map_load($object);
   $map = array_merge($map, islandora_gis_map_load($objects, $map_title));
-  dpm($map);
 
   foreach($objects as $object) {
+
+    variable_set('islandora_gis_view_object_pids', array($object->id));
 
     // Hook for islandora_gis_map_load_alter
     drupal_alter('islandora_gis_map_load', $map, count($objects));

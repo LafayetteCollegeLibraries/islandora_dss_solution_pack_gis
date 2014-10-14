@@ -202,13 +202,15 @@ function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 								),
 		     );
 
-  $layers = array('mapquest_osm' => 'mapquest_osm',
+  $layers = array('google_normal' => 'google_normal',
 		  'google_satellite' => 'google_satellite',
 		  );
 
   // Load the layer from the Islandora Object
   //$islandora_layers = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $objects);
-  $default_layer = 'mapquest_osm';
+
+  // Load the default layer based upon the project
+  $default_layer = variable_get('islandora_gis_openlayers_default_layer', 'google_normal');
 
   $openlayers_maps->data = array('width' => 'auto',
 				 'height' => '400px',
@@ -372,6 +374,7 @@ function islandora_gis_build_map($map = array()) {
 
     // griffinj
     $map['layers'][$layer_name]['numZoomLevels'] = 64;
+    $map['layers'][$layer_name]['minResolution'] = '0.059716428337097';
   }
 
   // Hook to alter map one last time.  Final modification to existing

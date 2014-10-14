@@ -92,10 +92,14 @@ function islandora_gis_geoserver_get_base_maps($object) {
 
   //foreach($connection->repository->ri->query($query_array['query'], $query_array['type']) as $result) {  
   //return $connection->repository->ri->query($query_array['query'], $query_array['type']);
-  return array_map(function($result) {
 
-      return islandora_object_load($result['object']['value']);
+  $results = array_map(function($result) {
+
+      return $result['object']['value'];
     }, $connection->repository->ri->query($query_array['query'], $query_array['type']));
+
+  // Ensure that the Islandora Objects are unique
+  return array_map('islandora_object_load', array_unique($results));
 }
 
 /**
@@ -213,6 +217,9 @@ function islandora_gis_geoserver_layers_load() {
     // Attempt to retrieve the layers manually
     //! @todo Rename (one is no longer retrieving base maps, but, WMS and WFS layers)
     foreach(islandora_gis_geoserver_base_maps_load($object) as $index => $base_map_layer) {
+
+      dpm('trace3');
+      dpm($base_map_layer);
       
       if ($base_map_layer) {
 	  
