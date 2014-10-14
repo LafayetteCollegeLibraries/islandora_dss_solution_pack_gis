@@ -118,6 +118,7 @@ function islandora_gis_layer_load($ds_id, $objects, $reset = FALSE) {
 	$islandora_layer = _islandora_gis_layer_load_kml($object);
       }
 
+      //! @todo Decouple from the islandora_gis_geoserver Module
       if(module_exists('islandora_gis_geoserver')) {
 
 	$islandora_layer->data['max_extent'] = islandora_gis_geoserver_max_extent($object);
@@ -239,7 +240,7 @@ function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 				 'islandora_layers' => array(),
 				 //'islandora_layers' => $islandora_layers,
 				 'minExtent' => array(-1, -1, 1, 1),
-				 //'maxExtent' => $max_extent,
+				 'maxExtent' => array(-180, -90, 180, 90)
 				 );
 
   /*
@@ -372,8 +373,9 @@ function islandora_gis_build_map($map = array()) {
     // Ensure JavaScript gets proper type.
     $map['layers'][$layer_name]['isBaseLayer'] = (boolean)($layer['isBaseLayer']);
 
-    // griffinj
-    $map['layers'][$layer_name]['numZoomLevels'] = 64;
+    // @author griffinj@lafayette.edu
+    // Override the maximum number of zoom levels with the maximum by default    
+    $map['layers'][$layer_name]['numZoomLevels'] = variable_get('islandora_gis_openlayers_numzoomlevels', 21);
     $map['layers'][$layer_name]['minResolution'] = '0.059716428337097';
   }
 
@@ -472,15 +474,13 @@ function islandora_gis_render_map_data($map = array()) {
     openlayers_add_js_projection_definition(openlayers_get_projection_by_identifier($map['projection']));
     openlayers_add_js_projection_definition(openlayers_get_projection_by_identifier($map['displayProjection']));
 
-    $map['numZoomLevels'] = 64;
-
     $js = array('openlayers' => array('maps' => array($map['id'] => $map)));
     drupal_add_js($js, 'setting');
 
     // Push map through theme function and return
     $output = theme('openlayers_map', array(
-      'map' => $map,
-    ));
+					    'map' => $map,
+					    ));
   }
   return $output;
 }

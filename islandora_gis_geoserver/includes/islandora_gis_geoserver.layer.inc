@@ -148,10 +148,7 @@ function islandora_gis_geoserver_base_maps_load($object) {
   foreach(islandora_gis_geoserver_get_base_maps($object) as $base_map_object) {
 
     //! @author griffinj@lafayette.edu
-    //$max_extent = islandora_gis_get_max_extent($obj);
-
-    //$coverage_name = preg_replace('/\:/', '_', $pid);
-
+    $max_extent = islandora_gis_geoserver_max_extent($object);
     $coverage_name = preg_replace('/\:/', '_', $base_map_object->id);
 
     $layer = new stdClass();
@@ -159,12 +156,13 @@ function islandora_gis_geoserver_base_maps_load($object) {
     $layer->title = $base_map_object->label;
 
     $layer->data = array('openlayers' => array('wms' => TRUE,
-					       'wms_data' => array(
-								   //'isBaseLayer' => TRUE,
-								   'isBaseLayer' => FALSE,
+					       'wms_data' => array('isBaseLayer' => FALSE,
 								   'projection' => array('EPSG:900913', 'EPSG:3857'),
 								   //'projection' => array('EPSG:4326'),
-								   //'maxExtent' => $max_extent
+								   'maxResolution' => 'auto',
+								   //'minResolution' => 'auto',
+								   //'minExtent' => array(-1,-1,1,1),
+								   'maxExtent' => $max_extent
 								   )));
     $layers[] = $layer;
   }

@@ -78,15 +78,11 @@ function islandora_gis_geoserver_get_session($user = 'admin', $pass = 'secret', 
  */
 function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map, $layer_count) {
 
-  //dpm($map['islandora_layers']);
-  //dpm(_islandora_gis_geoserver_openlayers_layers($layer_count));
   //$map['islandora_layers'] = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers($layer_count));
 
-  dpm($map['islandora_layers']);
   $islandora_layers = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers($layer_count));
   $map['islandora_layers'] = $islandora_layers;
-  dpm($map['islandora_layers']);
-
+  
   //$map['islandora_layers'][] = _islandora_gis_geoserver_openlayers_layers($layer_count);
   
   /*
@@ -96,7 +92,4 @@ function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map, $layer_coun
     $islandora_layer['layer']->data['visibility']
   }
   */
-
-  dpm('trace4');
-  dpm($map);
 }

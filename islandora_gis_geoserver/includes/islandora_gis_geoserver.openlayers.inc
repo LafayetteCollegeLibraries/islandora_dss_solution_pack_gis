@@ -36,9 +36,11 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
   foreach (array_values($gs_layers) as $gs_layer) {
 
     if (!isset($gs_layer->data['openlayers'])) {
+
       // Layer has no OpenLayers configuration --> skip the layer
       continue;
     }
+
     $openlayers = $gs_layer->data['openlayers'];
 
     //if ($openlayers['wms']) {
@@ -57,42 +59,25 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 			      'base_url' => $url . 'wms',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
-			      //'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:4326'),
-			      //'projection' => array('EPSG:2272'),
-			      //'projection' => array('EPSG:4326'),
 			      'params' => array('isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
 						'buffer' => '2',
 						'ratio' => '1.5',
 						'singleTile' => 1,
+						'maxResolution' => $data['maxResolution'],
+						'maxExtent' => $data['maxExtent']
 						),
 			      'options' => array('TRANSPARENT' => 'true',
 						 'exceptions' => 'application/vnd.ogc.se_inimage',
 						 'format' => 'image/png',
 						 'layers' => array($workspace . ':' . $gs_layer->name),
 						 'styles' => '',
-						 //'numZoomLevels' => 36 // Zoom levels
-						 //'numZoomLevels' => 60 // Zoom levels
 						 ),
 			      'visibility' => TRUE, // Forced for multiple raster layers
-
-			      // @author griffinj
-			      // This must be overridden either at the layer of the map or within the JavaScript
-			      //
-			      //'numZoomLevels' => 36, // Zoom levels
-			      'numZoomLevels' => 60, // Zoom levels
-
-			      //'maxResolution' => 0.17578125, // This must be generated using the bounding box,
-			      'maxResolution' => 0.3, // This must be generated using the bounding box,
-			      'maxExtent' => array(-8373330.315, 4965998.047, -8371641.131, 4967177.293) // Specific to the projection
 			      );
 
-      dpm($ol_layer);
-
-      //$ol_layers[$ol_layer->name] = $ol_layer;
       $ol_layers[] = array('layer' => $ol_layer,
 			   'callback' => '_islandora_gis_layers_process');
 
-    //} elseif($openlayers['wfs']) {
     } elseif(array_key_exists('wfs', $openlayers)) {
 
       /*
@@ -134,53 +119,28 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
       // Extending this to providing a mapping between web feature names and Islandora Objects
       //! @todo Refactor
-      $object_feature_map = array(
+      $default_object_feature_map = array('pureFood_1' => 'States_CottonSeedMills_1860_WGS84_simple_2',
+					  'pureFood_2' => 'States_CottonSeedMills_1880_WGS84_simple_2',
+					  'pureFood_3' => 'States_CottonSeedMills_1900_WGS84_simple_2',
+					  'pureFood_4' => 'US_county_cotton_1860_WGS84_simple_3',
+					  'pureFood_5' => 'US_county_cotton_1880_WGS84_simple_2',
+					  'pureFood_6' => 'US_county_cotton_1900_WGS84_simple_2',
+					  'pureFood_7' => 'US_state_1860_WGS84_simple',
+					  );
 
-				  //'pureFood_2' => 'States_CottonSeedMills_1880_WGS84_simple_2',
-				  //'pureFood_3' => 'States_CottonSeedMills_1900_WGS84_simple_2',
-
-				  //'pureFood_1' => 'US_county_cotton_1880_WGS84_simple',
-				  //'pureFood_6' => 'US_county_cotton_1900_WGS84_simple',
-				  'pureFood_7' => 'US_state_1860_WGS84_simple',
-				  //'pureFood_8' => 'US_county_cotton_1880_WGS84_simple',
-				  //'pureFood_9' => 'US_county_cotton_1900_WGS84_simple',
-
-				  'pureFood_1' => 'States_CottonSeedMills_1860_WGS84_simple_2',
-				  'pureFood_2' => 'States_CottonSeedMills_1880_WGS84_simple_2',
-				  'pureFood_3' => 'States_CottonSeedMills_1900_WGS84_simple_2',
-				  'pureFood_4' => 'US_county_cotton_1860_WGS84_simple_3',
-				  'pureFood_5' => 'US_county_cotton_1880_WGS84_simple_2',
-				  'pureFood_6' => 'US_county_cotton_1900_WGS84_simple_2',
-				  );
+      $object_feature_map = variable_get('islandora_gis_geoserver_openlayers_feature_map', $default_object_feature_map);
       
       $typeName = array_key_exists($gs_layer->name, $object_feature_map) ? $object_feature_map[$gs_layer->name] : $gs_layer->name;
 
       $ol_layer->data = array('attribution' =>  isset($gs_layer->data['attribution']) ? $gs_layer->data['attribution'] : NULL,
 			      'layer_type' => 'openlayers_layer_type_geoserver_wfs',
 			      'sld' => '',
+
 			      //'url' => $url . $workspace . '/ows',
 			      'url' => $url . 'wfs',
+
 			      //'typeName' => $workspace . ':' . $gs_layer->name,
 			      'typeName' => $typeName,
-
-			      //'typeName' => 'ExamplePoints_b_v1_prj',
-			      
-			      //'typeName' => 'States_CottonSeedMills_1860_WGS84',
-			      //'typeName' => 'States_CottonSeedMills_1880_WGS84',
-			      //'typeName' => 'States_CottonSeedMills_1900_WGS84',
-			      //'typeName' => 'US_county_cotton_1860_WGS84',
-			      //'typeName' => 'US_county_cotton_1880_WGS84',
-			      //'typeName' => 'US_county_cotton_1900_WGS84',
-
-			      //'typeName' => 'States_CottonSeedMills_1860_WGS84_simple',
-			      //'typeName' => 'States_CottonSeedMills_1880_WGS84_simple',
-			      //'typeName' => 'States_CottonSeedMills_1900_WGS84_simple',
-
-			      //'typeName' => 'US_county_cotton_1860_WGS84_simple',
-			      //'typeName' => 'US_county_cotton_1880_WGS84_simple',
-			      //'typeName' => 'US_county_cotton_1900_WGS84_simple',
-
-			      //'typeName' => 'US_state_1860_WGS84_simple',
 
 			      'strategy' => isset($data['strategy']) ? $data['strategy'] : 'bbox',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
@@ -189,8 +149,6 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
 			      'visibility' => $wfs_layer_count == 1 // Ensures that, for cases in which multiple WFS layers are available, all are disabled by default
 			      );
-
-      //dpm($ol_layer);
 
       $ol_layers[] = array('layer' => $ol_layer,
 			   'callback' => '_islandora_gis_layers_process');

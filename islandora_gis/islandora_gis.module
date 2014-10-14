@@ -171,21 +171,24 @@ function islandora_gis_get_feature_id($object) {
   try {
 
     $results = $object->repository->ri->query($query_array['query'], $query_array['type']);
-    if(!empty($results)) {
 
-      $result = array_shift($results);
+    foreach($results as $result) {
+
       $image_object = islandora_object_load($result['subject']['value']);
 
       $dc_doc = new SimpleXMLElement($image_object['DC']->content);
 
       // Retrieve the URL for the related resource
       $dc_doc->registerXPathNamespace('http://purl.org/dc/elements/1.1/', 'dc');
+
+      dpm($dc_doc->asXml());
       $dc_relations = $dc_doc->xpath('//dc:relation[starts-with(text(), "' . geoserver_url() . '")]');
 
       $feature_id = NULL;
-      if(!empty($dc_relations)) {
+      //if(!empty($dc_relations)) {
 
-	$dc_relation = array_shift($dc_relations);
+      //$dc_relation = array_shift($dc_relations);
+      foreach($dc_relations as $dc_relation) {
 
 	if(preg_match('/featureID\=(.+)?/', (string) $dc_relation, $m)) {
 
@@ -203,17 +206,15 @@ function islandora_gis_get_feature_id($object) {
 }
 
 /**
+ * Functionality for the viewing collections of Shapefile Objects
+ * (This permits the user to view each Shapefile as a separate vector layer)
  * Implements hook_CMODEL_PID_islandora_view_object().
  *
  */
 function islandora_gis_islandora_collectionCModel_islandora_view_object($object) {
 
-  dpm($object);
-
   $policy = new CollectionPolicy($object['COLLECTION_POLICY']->content);
   $policy_content_models = $policy->getContentModels();
-
-  dpm($policy_content_models);
 
   if(isset($policy_content_models['islandora:sp_shapefile_cmodel'])) {
 

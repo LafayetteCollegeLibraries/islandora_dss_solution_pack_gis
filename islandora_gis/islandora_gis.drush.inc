@@ -76,6 +76,12 @@ function drush_islandora_gis_update_image($object_pid) {
  */
 function drush_islandora_gis_ingest($path, $namespace = NULL, $pid = NULL, $label = 'New Shapefile Object', $collections = array('islandora:sp_shapefile_collection'), $fgdc_xml_path = NULL) {
 
+  // @todo Restructure for Drush argument parsing
+  if(gettype($collections) == 'string') {
+
+    $collections = array($collections);
+  }
+
   module_load_include('inc', 'islandora', 'includes/utilities');
 
   // If the ingestion is being performed from a directory, parse the contents

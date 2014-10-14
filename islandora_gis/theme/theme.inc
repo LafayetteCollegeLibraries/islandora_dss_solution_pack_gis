@@ -52,11 +52,17 @@ function islandora_gis_preprocess_islandora_gis_popup(&$vars) {
 						   'alt' => $islandora_object->label,
 						   'title' => $islandora_object->label,
 						   'attributes' => array()));
-  dpm($vars);
 
 }
 
+/**
+ * Theming functionality for individual OpenLayers Map widgets
+ * Implements hook_preprocess_HOOK().
+ *
+ */
 function islandora_gis_preprocess_openlayers_map(&$vars) {
+
+  dpm($vars);
 
   drupal_add_css(drupal_get_path('module', 'islandora_gis') . '/css/islandora_gis.css');
 
@@ -66,8 +72,13 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
   foreach($islandora_feature_map as $feature_id => &$value) {
 
     $object = islandora_object_load($value);
+
+    //! @todo Provide an interface through which to specify the Dublin Core elements by XPath (along with labels and whether or not the CDATA should be rendered as a link to the Object)
     $dc_element_map = variable_get('islandora_gis_popup_dc_elements', array('//dc:title' => array('label' => 'Title',
-												  'href' => true)));
+												  'href' => true),
+									    '//dc:coverage' => array('label' => 'Coverage',
+												     'href' => false),
+									    ));
 
     $dc_elements = array();
 
@@ -78,6 +89,7 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
       $elements = $dc_doc->xpath($xpath);
       $element = array_shift($elements);
 
+      // Provide a link to the Objects for element values specified as "href" = TRUE
       if($value['href']) {
 
 	$dc_elements[] = array('label' => $value['label'],
@@ -93,9 +105,38 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
       }
     }
 
+    // Theme the output for the OpenLayers Popup
     $value = theme('islandora_gis_popup', array('islandora_object' => $object, 'islandora_metadata_fields' => $dc_elements));
   }
 
-  $js = array('islandoraGis' => $islandora_feature_map);
+  /**
+   * Provide the default zoom extent for the map based upon the WMS Islandora layers
+   *
+   */
+  $wms_layers = array_filter($vars['map']['layers'], function($layer) {
+
+      return $layer['layer_type'] == 'openlayers_layer_type_wms';
+    });
+
+  $wms_layer_extents = array_map(function($layer) {
+
+      return $layer['params']['maxExtent'];
+    }, $wms_layers);
+
+  $default_zoom_extent = array_reduce($wms_layer_extents, function($u, $v) {
+
+      $u = empty($u) ? $v : $u;
+      foreach($v as $i => $value) {
+
+	$u[$i] += $value - (float) $u[$i];
+      }
+      
+      return $u;
+    });
+
+  $js = array('islandoraGis' => array('features' => $islandora_feature_map,
+				      'defaultZoomExtent' => $default_zoom_extent
+				      ));
   drupal_add_js($js, 'setting');
+
 }

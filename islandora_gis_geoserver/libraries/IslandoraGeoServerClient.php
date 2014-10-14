@@ -104,8 +104,16 @@ class IslandoraGeoServerClient {
 
   private function authenticate($user, $pass) {
 
+    // Work-around
+    // @todo Refactor
+    $this->url = rtrim($this->url, '/');
+
     $res = $this->post('j_spring_security_check', array('username' => $user,
 							'password' => $pass));
+
+    // Work-around
+    // @todo Refactor
+    $this->url = rtrim($this->url, '/') . '/';
 
     try {
 

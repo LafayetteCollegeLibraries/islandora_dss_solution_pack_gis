@@ -136,7 +136,7 @@ class IslandoraShapefile extends IslandoraObject {
 		       $geoserver_session = NULL,
 		       $pid = NULL, $object = NULL,
 		       //$workspace = NULL,
-		       $workspace = 'default',
+		       $workspace_name = 'default',
 		       $feature = NULL) {
 
     parent::__construct($session, $pid, $object);
@@ -203,7 +203,11 @@ class IslandoraShapefile extends IslandoraObject {
     } else { // ...and, otherwise, retrieve the compressed Shapefile from the Islandora Object.
 
       $file_path = '/tmp/IslandoraGeoImage_' . $this->feature_type_name . '.zip';
-      //$this->load();
+
+      if(get_class($this->object) == 'stdClass') {
+
+	$this->load();
+      }
 
       //! @todo Resolve
       //$ds_obj = $this->datastream('SHP');
@@ -212,7 +216,7 @@ class IslandoraShapefile extends IslandoraObject {
       $ds_obj->getContent($file_path);
     }
     
-    $workspace->dataStore($this->feature_type_name, $file_path);
+    $this->workspace->dataStore($this->feature_type_name, $file_path);
     unlink($file_path);
   }
 
