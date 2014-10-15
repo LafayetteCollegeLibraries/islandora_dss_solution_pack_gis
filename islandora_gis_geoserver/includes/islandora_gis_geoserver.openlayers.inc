@@ -105,6 +105,16 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
     }
       */
 
+      $default_layer_names = array('States_CottonSeedMills_1860' => 'Mills by state, 1860 (States_CottonSeedMills_1860)',
+				   'States_CottonSeedMills_1880' => 'Mills by state, 1880 (States_CottonSeedMills_1880)',
+				   'States_CottonSeedMills_1900' => 'Mills by state, 1900 (States_CottonSeedMills_1900)',
+				   'US_county_cotton_1860' => 'Mills by county, 1860 (US_county_cotton_1860)',
+				   'US_county_cotton_1880' => 'Mills by county, 1880 (US_county_cotton_1880)',
+				   'US_county_cotton_1900' => 'Mills by county, 1900 (US_county_cotton_1900)',
+				   'pureFood_7' => 'US_state_1860_WGS84_simple',
+				   );
+      $layer_names = variable_get('islandora_gis_geoserver_openlayers_layer_names', $default_layer_names);
+
       // geoserver/plugins/openlayers/layer_types/openlayers_layer_type_geoserver_wfs.inc
       //$style = $gs_layer->data['style'];
       //$sld = isset($gs_styles[$style]) ? $gs_styles[$style]->data : '';
@@ -112,7 +122,12 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
       $ol_layer = new stdClass();
       $ol_layer->api_version = 1;
       $ol_layer->name = $gs_layer->name . '_wfs';
-      $ol_layer->title = $gs_layer->title;
+
+      //$ol_layer->title = $gs_layer->title;
+
+      dpm($gs_layer->title);
+      $ol_layer->title =  array_key_exists($gs_layer->title, $default_layer_names) ? $default_layer_names[$gs_layer->title] : $gs_layer->title;
+
       $ol_layer->description = t('WFS layer of GeoServer layer !name',
 				 //array('!name' => $gs_layer->name . ' (GeoServer)'));
 				 array('!name' => '(GeoServer)'));

@@ -149,6 +149,17 @@ function islandora_gis_geoserver_base_maps_load($object) {
 
     //! @author griffinj@lafayette.edu
     $max_extent = islandora_gis_geoserver_max_extent($object);
+
+    //dpm($max_extent);
+    $default_zoom_extent = variable_set('islandora_gis_openlayers_default_zoom_extent', array());
+
+    $max_extent = array(-8375376.6495653,
+			4966152.1011441,
+			-8369787.1918727,
+			4968063.0268509);
+
+    dpm($max_extent);
+
     $coverage_name = preg_replace('/\:/', '_', $base_map_object->id);
 
     $layer = new stdClass();

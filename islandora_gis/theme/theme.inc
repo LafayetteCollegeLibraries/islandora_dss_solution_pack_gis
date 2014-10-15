@@ -113,26 +113,60 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
    * Provide the default zoom extent for the map based upon the WMS Islandora layers
    *
    */
-  $wms_layers = array_filter($vars['map']['layers'], function($layer) {
+  $default_zoom_extent = variable_get('islandora_gis_openlayers_default_zoom_extent', array());
+  dpm($default_zoom_extent);
 
-      return $layer['layer_type'] == 'openlayers_layer_type_wms';
-    });
+  if(empty($default_zoom_extent)) {
+    
+    /*
+    $wms_layers = array_filter($vars['map']['layers'], function(&$layer) {
+	
+	return $layer['layer_type'] == 'openlayers_layer_type_wms';
+      });
+    */
+    $wms_layers = array();
+    foreach($vars['map']['layers'] as &$layer) {
 
-  $wms_layer_extents = array_map(function($layer) {
+      if($layer['layer_type'] == 'openlayers_layer_type_wms') {
 
-      return $layer['params']['maxExtent'];
-    }, $wms_layers);
-
-  $default_zoom_extent = array_reduce($wms_layer_extents, function($u, $v) {
-
-      $u = empty($u) ? $v : $u;
-      foreach($v as $i => $value) {
-
-	$u[$i] += $value - (float) $u[$i];
+	$wms_layers[] = $layer;
       }
-      
-      return $u;
-    });
+    }
+    
+    /*
+    $wms_layer_extents = array_map(function($layer) {
+	
+	return $layer['params']['maxExtent'];
+      }, $wms_layers);
+    */
+    $wms_layer_extents = array();
+    foreach($wms_layers as &$layer) {
+
+      $wms_layer_extents[] = $layer['params']['maxExtent'];
+      $layer['params']['maxExtent'] = array(-180, -90, 180, 90);
+    }
+
+    $default_zoom_extent = array_reduce($wms_layer_extents, function($u, $v) {
+	
+	$u = empty($u) ? $v : $u;
+	foreach($v as $i => $value) {
+	  
+	  $u[$i] += $value - (float) $u[$i];
+	}
+	
+	return $u;
+      });
+  }
+  dpm($default_zoom_extent);
+
+  // Reduce
+  $default_zoom_extent = array(-8373859.3930893,
+			       4966232.0909636,
+			       -8371064.6642431,
+			       4967187.553817,
+			       );
+
+  dpm($default_zoom_extent);
 
   $js = array('islandoraGis' => array('features' => $islandora_feature_map,
 				      'defaultZoomExtent' => $default_zoom_extent

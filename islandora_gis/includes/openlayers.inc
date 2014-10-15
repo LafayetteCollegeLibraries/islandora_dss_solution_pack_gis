@@ -377,6 +377,17 @@ function islandora_gis_build_map($map = array()) {
     // Override the maximum number of zoom levels with the maximum by default    
     $map['layers'][$layer_name]['numZoomLevels'] = variable_get('islandora_gis_openlayers_numzoomlevels', 21);
     $map['layers'][$layer_name]['minResolution'] = '0.059716428337097';
+
+    $default_layer_names = array('google_satellite' => 'Satellite View (Google Maps Satellite)',
+				 'google_normal' => 'Map View (Google Maps Normal)',
+				 );
+    $layer_names = variable_get('islandora_gis_geoserver_openlayers_layer_names', $default_layer_names);
+
+    if(array_key_exists($layer_name, $layer_names)) {
+
+      $map['layers'][$layer_name]['title'] = $layer_names[$layer_name];
+    }
+    dpm($map['layers']);
   }
 
   // Hook to alter map one last time.  Final modification to existing
