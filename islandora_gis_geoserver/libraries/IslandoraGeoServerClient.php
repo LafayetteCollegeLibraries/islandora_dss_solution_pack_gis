@@ -2,25 +2,11 @@
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-  /**
-   * Class for the Islandora/GeoServer API
-   * @author griffinj@lafayette.edu
-   *
-   */
-
-/*
- $client = new GuzzleHttp\Client();
-$response = $client->get('http://guzzlephp.org');
-$res = $client->get('https://api.github.com/user', ['auth' =>  ['user', 'pass']]);
-echo $res->getStatusCode();
-// 200
-echo $res->getHeader('content-type');
-// 'application/json; charset=utf8'
-echo $res->getBody();
-// {"type":"User"...'
-var_export($res->json());
-// Outputs the JSON decoded data
-*/
+/**
+ * Class for the Islandora/GeoServer API
+ * @author griffinj@lafayette.edu
+ *
+ */
 
 use Guzzle\Http\Client;
 use Guzzle\Http\Exception\ClientErrorResponseException;
@@ -28,6 +14,50 @@ use Guzzle\Plugin\Cookie\CookiePlugin;
 use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
 use Guzzle\Plugin\CurlAuth\CurlAuthPlugin;
 
+class GeoServerSession {
+
+  public $url;
+  public $user;
+  public $pass;
+
+  /**
+   * Static method for parsing the cookie file
+   * Much of this was copied from the geoserver Module
+   * This is for cases in which issues within Guzzle are raised
+   *
+   */
+  public static function geoserver_parse_cookiefile($file) {
+
+    // Parse cookie file.
+    $cookies = array();
+    $lines = @file($file);
+    if($lines===FALSE) {
+
+      throw new \Exception("Couldn't read cookies for GeoServer. Did your session expire?");
+      return array();
+    }
+    foreach ($lines as $line) {
+
+      if (substr($line, 0, 2) === '# ') {
+
+        continue;
+      }
+      $columns = explode("\t", $line);
+      if (isset($columns[5]) && isset($columns[6])) {
+
+        $cookies[$columns[5]] = mb_substr($columns[6], 0, -1);
+      }
+    }
+    return $cookies;
+  }
+
+  public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest') {
+
+    $this->url = rtrim($url, '/') . '/';
+    $this->user = $user;
+    $this->pass = $pass;
+  }
+}
 
 class IslandoraGeoServerSession {
 
@@ -43,13 +73,13 @@ class IslandoraGeoServerSession {
     if($lines===FALSE) {
 
       /*
-      watchdog('geoserver', 
+      watchdog('geoserver',
 	       t("Couldn't read cookies for GeoServer. Did your session expire?"),
-	       NULL, 
+	       NULL,
 	       WATCHDOG_ERROR
 	       );
       */
-      
+
       throw new \Exception("Couldn't read cookies for GeoServer. Did your session expire?");
       return array();
     }
@@ -125,7 +155,7 @@ class IslandoraGeoServerClient {
 
   public function __construct($session, $client = NULL) {
 
-    $this->session = $session;    
+    $this->session = $session;
     $this->url = $this->session->url;
     $user = $this->session->user;
     $pass = $this->session->pass;
@@ -169,7 +199,7 @@ class IslandoraGeoServerClient {
    *
    */
   private function request($method, $path) {
-    
+
     $url = $this->url . "/$path";
 
     if(!method_exists($this->client, $method)) {
@@ -308,7 +338,7 @@ class GeoServerWorkspace extends GeoServerResource {
 
 	$values = array();
 	switch($property) {
-	
+
 	case 'dataStores':
 
 	  // Retrieve the data stores
@@ -345,7 +375,7 @@ class GeoServerWorkspace extends GeoServerResource {
 	  break;
 
 	default:
-	  
+
 	  $this->{$property} = $value;
 	  break;
 	}
@@ -520,7 +550,7 @@ class GeoServerDatastore extends GeoServerResource {
       // ...attempt to create the coverage store.
       return $this->create();
     } elseif(!$response->isSuccessful()) {
-      
+
       throw new \Exception("Failed to retrieve the data store $name");
     }
 
@@ -537,7 +567,7 @@ class GeoServerDatastore extends GeoServerResource {
       $values = array();
 
       switch($property) {
-	
+
       case 'coverages':
 
 	// Retrieve the coverage stores
@@ -652,7 +682,7 @@ class GeoServerCoverageStore extends GeoServerResource {
       // ...attempt to create the coverage store.
       return $this->create();
     } elseif(!$response->isSuccessful()) {
-      
+
       throw new \Exception("Failed to retrieve the coverage store $name");
     }
 
@@ -663,7 +693,7 @@ class GeoServerCoverageStore extends GeoServerResource {
       $values = array();
 
       switch($property) {
-	
+
       case 'coverages':
 
 	// Retrieve the coverage stores

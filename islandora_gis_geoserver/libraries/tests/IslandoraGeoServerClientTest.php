@@ -1,10 +1,10 @@
 <?php
 
-  /**
-   * @author griffinj@lafayette.edu
-   * The unit tests for the IslandoraGeoServer API
-   *
-   */
+/**
+ * @author griffinj@lafayette.edu
+ * The unit tests for the IslandoraGeoServer API
+ *
+ */
 
 require dirname(__DIR__) . '/IslandoraGeoServerClient.php';
 
@@ -49,7 +49,7 @@ class IslandoraGeoServerClientTest extends PHPUnit_Framework_TestCase {
     $header = curl_exec($request);
     $http_code = curl_getinfo($request, CURLINFO_HTTP_CODE);
     curl_close($request);
-      
+
     $cookies = IslandoraGeoServerSession::geoserver_parse_cookiefile($file);
 
     // Verify that the authentication was performed correctly
