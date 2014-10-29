@@ -42,20 +42,21 @@ class ClientTest extends PHPUnit_Framework_TestCase {
     $client = new Client($this->session, $this->consumer);
 
     // Mock for workspace A
-    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200, array('Content-Type' => 'application/json'), json_encode(array('workspace' => array()))));
     $workspace_a = new Workspace($client, 'test_workspace_a');
 
     // Mock for workspace B
-    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
-    $workspace_a = new Workspace($client, 'test_workspace_b');
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200, array('Content-Type' => 'application/json'), json_encode(array('workspace' => array()))));
+    $workspace_b = new Workspace($client, 'test_workspace_b');
 
     // Test the mutator and accessor
-    $client->workspace('test_workspace_a');
-    $this->assertEquals($workspace_a, $client->workspace);
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200, array('Content-Type' => 'application/json'), json_encode(array('workspace' => array()))));
 
-    // Test the alias
-    $client->workspace = 'test_workspace_b';
-    $this->assertEquals($workspace_b, $client->workspace);
+    // Accessing multiple workspaces using a single client instance
+    $this->assertEquals($workspace_a, $client->workspace('test_workspace_a'));
+$this->plugin->addResponse(new Guzzle\Http\Message\Response(200, array('Content-Type' => 'application/json'), json_encode(array('workspace' => array()))));
+
+    $this->assertEquals($workspace_b, $client->workspace('test_workspace_b'));
   }
 
   public function testGet() {
@@ -63,21 +64,46 @@ class ClientTest extends PHPUnit_Framework_TestCase {
     $client = new Client($this->session, $this->consumer);
 
     $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
-    $client->get('default');
+    $client->get('workspaces/default');
 
-    print_r(array_pop($this->plugin->getReceivedRequests()));
-    //$this->assertContainsOnly($request, $plugin->getReceivedRequests());
+    $response = array_pop($this->plugin->getReceivedRequests());
+    $this->assertEquals($this->url . '/rest' . '/workspaces/default', $response->getUrl());
   }
 
   public function testPost() {
 
+    $client = new Client($this->session, $this->consumer);
+
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
+    $data = array('name' => 'test_workspace_c');
+
+    $client->post('workspaces', $data);
+
+    $response = array_pop($this->plugin->getReceivedRequests());
+    $this->assertEquals($this->url . '/rest' . '/workspaces', $response->getUrl());
   }
 
   public function testPut() {
 
+    $client = new Client($this->session, $this->consumer);
+
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
+    $data = array('name' => 'test_workspace_d');
+
+    $client->put('workspaces/test_workspace_c', $data);
+
+    $response = array_pop($this->plugin->getReceivedRequests());
+    $this->assertEquals($this->url . '/rest' . '/workspaces/test_workspace_c', $response->getUrl());
   }
 
   public function testDelete() {
 
+    $client = new Client($this->session, $this->consumer);
+
+    $this->plugin->addResponse(new Guzzle\Http\Message\Response(200));
+    $client->delete('workspaces/test_workspace_c');
+
+    $response = array_pop($this->plugin->getReceivedRequests());
+    $this->assertEquals($this->url . '/rest' . '/workspaces/test_workspace_c', $response->getUrl());
   }
 }

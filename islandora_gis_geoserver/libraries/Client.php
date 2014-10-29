@@ -4,12 +4,15 @@ namespace GeoServer;
 
 include_once __DIR__ . "/vendor/autoload.php";
 include_once __DIR__ . "/Session.php";
+include_once __DIR__ . "/Workspace.php";
 
 use Guzzle\Http\Client as GuzzleClient;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Guzzle\Plugin\Cookie\CookiePlugin;
 use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
 use Guzzle\Plugin\CurlAuth\CurlAuthPlugin;
+
+use GeoServer\Workspace as Workspace;
 
 class Client {
 
@@ -106,7 +109,7 @@ class Client {
    */
   public function workspace($name) {
 
-    $this->workspace = new GeoServerWorkspace($this, $name);
+    $this->workspace = new Workspace($this, $name);
     return $this->workspace;
   }
 
@@ -164,12 +167,8 @@ class Client {
    * DELETE method over the HTTP
    *
    */
-  public function delete($path, $params, $headers = array()) {
+  public function delete($path, $params = array(), $headers = array()) {
 
-    //$url = $this->url . '/' . $path;
-
-    // DELETE requests always require authentication
-    //$this->authenticate($url, $this->session->user, $this->session->pass);
     return $this->request('delete', $path, $headers, $params);
   }
 
