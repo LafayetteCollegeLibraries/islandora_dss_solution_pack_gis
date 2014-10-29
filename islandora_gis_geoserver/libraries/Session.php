@@ -1,13 +1,18 @@
 <?php
 
+namespace GeoServer;
+
 include_once __DIR__ . "/vendor/autoload.php";
+include_once __DIR__ . "/Client.php";
+
+use GeoServer\Client as Client;
 
 /**
  * Class for the GeoServerClient: A GeoServer RESTful consumer
  * @author griffinj@lafayette.edu
  *
  */
-class GeoServerSession {
+class Session {
 
   public $url;
   public $user;
@@ -45,13 +50,13 @@ class GeoServerSession {
     return $cookies;
   }
 
-  public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest') {
+  public function __construct($user, $pass, $url = 'http://localhost:8080/geoserver/rest', $client = NULL) {
 
     $this->url = rtrim($url, '/') . '/';
     $this->user = $user;
     $this->pass = $pass;
 
-    $this->client = new Client($self);
+    $this->client = is_null($client) ? new Client($this) : $client;
   }
 
   /**

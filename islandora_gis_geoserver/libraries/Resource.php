@@ -1,11 +1,14 @@
 <?php
 
+namespace GeoServer;
+
+
 /**
  * @see geoserver_resource
  *
  */
 
-abstract class GeoServerResource {
+abstract class Resource {
 
   public $name;
 

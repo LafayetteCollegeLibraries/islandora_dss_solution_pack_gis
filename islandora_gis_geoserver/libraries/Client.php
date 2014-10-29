@@ -1,13 +1,17 @@
 <?php
 
+namespace GeoServer;
+
 include_once __DIR__ . "/vendor/autoload.php";
-use Guzzle\Http\Client;
+include_once __DIR__ . "/Session.php";
+
+use Guzzle\Http\Client as GuzzleClient;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 use Guzzle\Plugin\Cookie\CookiePlugin;
 use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
 use Guzzle\Plugin\CurlAuth\CurlAuthPlugin;
 
-class GeoServerClient {
+class Client {
 
   private $client;
 
@@ -88,7 +92,7 @@ class GeoServerClient {
       $cookiePlugin = new CookiePlugin(new ArrayCookieJar());
       $authPlugin = new CurlAuthPlugin($user, $pass);
 
-      $this->client = new Client($this->url);
+      $this->client = new GuzzleClient($this->url);
       $this->client->addSubscriber($cookiePlugin);
       //$this->client->addSubscriber($authPlugin);
     }

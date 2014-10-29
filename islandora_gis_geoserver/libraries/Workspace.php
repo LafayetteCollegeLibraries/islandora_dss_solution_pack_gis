@@ -1,9 +1,13 @@
 <?php
 
+namespace GeoServer;
+
 include_once __DIR__ . "/vendor/autoload.php";
 include_once __DIR__ . "/Resource.php";
 
-class GeoServerWorkspace extends GeoServerResource {
+use GeoServer\Resource as Resource;
+
+class Workspace extends Resource {
 
   /**
    * Create remote resource.
