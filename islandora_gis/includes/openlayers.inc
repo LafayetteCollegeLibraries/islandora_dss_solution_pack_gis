@@ -378,8 +378,8 @@ function islandora_gis_build_map($map = array()) {
     $map['layers'][$layer_name]['numZoomLevels'] = variable_get('islandora_gis_openlayers_numzoomlevels', 21);
     $map['layers'][$layer_name]['minResolution'] = '0.059716428337097';
 
-    $default_layer_names = array('google_satellite' => 'Satellite View (Google Maps Satellite)',
-				 'google_normal' => 'Map View (Google Maps Normal)',
+    $default_layer_names = array('google_satellite' => 'Satellite View',
+				 'google_normal' => 'Map View',
 				 );
     $layer_names = variable_get('islandora_gis_geoserver_openlayers_layer_names', $default_layer_names);
 

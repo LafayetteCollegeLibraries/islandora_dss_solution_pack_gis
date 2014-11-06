@@ -118,7 +118,8 @@ function islandora_gis_geoserver_max_extent($shp_object, $objects = NULL) {
 
   if(!empty($objects)) {
 
-    $object = $objects[0];
+    //$object = $objects[0];
+    $object = array_pop($objects);
 
     $dc_doc = new SimpleXmlElement($object['DC']->content);
     $dc_doc->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
@@ -153,12 +154,25 @@ function islandora_gis_geoserver_base_maps_load($object) {
     //dpm($max_extent);
     $default_zoom_extent = variable_set('islandora_gis_openlayers_default_zoom_extent', array());
 
+    /*
     $max_extent = array(-8375376.6495653,
 			4966152.1011441,
 			-8369787.1918727,
 			4968063.0268509);
+    */
 
     dpm($max_extent);
+
+    $max_extent = array(
+			-23461887.206699,
+			-1193640.6335351,
+			
+			-567468.49790947,
+			6633511.0617773
+			);
+
+    //$max_extent = array(-180, -90, 180, 90);
+    //$max_extent = 'auto';
 
     $coverage_name = preg_replace('/\:/', '_', $base_map_object->id);
 
@@ -213,9 +227,6 @@ function islandora_gis_geoserver_layers_load() {
   //if(!empty($object_pid)) {
   foreach($object_pids as $object_pid) {
 
-    dpm('trace5');
-    dpm($object_pid);
-
     $session = islandora_dss_get_session();
     $geoserver_session = islandora_gis_geoserver_get_session();
     $object = islandora_object_load($object_pid);
@@ -227,9 +238,6 @@ function islandora_gis_geoserver_layers_load() {
     //! @todo Rename (one is no longer retrieving base maps, but, WMS and WFS layers)
     foreach(islandora_gis_geoserver_base_maps_load($object) as $index => $base_map_layer) {
 
-      dpm('trace3');
-      dpm($base_map_layer);
-      
       if ($base_map_layer) {
 	  
 	//$layers[$index] = $base_map_layer;
@@ -238,7 +246,5 @@ function islandora_gis_geoserver_layers_load() {
     }
   }
 
-  dpm('trace6');
-  dpm($layers);
   return $layers;
 }
