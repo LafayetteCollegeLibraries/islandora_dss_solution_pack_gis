@@ -324,7 +324,6 @@ class ShapefileProcessor {
     $json_file_path = preg_replace('/\.shp$/', ".$file_ext", $shape_file_path);
 
     // Submit the POST request to ogre
-    //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shape_file_path), $json_file_path);
     $returnValue = $this->ogr2ogr('-f GeoJSON', $json_file_path, $shape_file_path);
 
     $this->validateJson($json_file_path, 'file://' . __DIR__ . '/json/geojson_schema.json');
@@ -481,20 +480,6 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
 
     $returnValue = FALSE;
 
-    /*
-    foreach(array('gml', 'kml', 'json') as $derivative_type) {
-
-      $prop_name = "$derivative_type_file_path";
-      if(filesize($this->$prop_name) > 1024*520) {
-
-	
-      }
-    }
-    */
-
-    print $this->object['JSON']->size . "\n";
-    print filesize($this->json_file_path) . "\n";
-
     if($force_geo_json or filesize($this->json_file_path) > 1024*1024) {
 
       $topo_json_file_path = $this->json_file_path;
@@ -502,11 +487,9 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       // Invoke the interface for reducing TopoJSON into GeoJSON
       if(isset($precision)) {
 
-	print "trace1\n";
 	$this->geojson("--precision $precision", $this->json_file_path);
       } else {
 
-	print "trace2\n";
 	$this->geojson($this->json_file_path);
       }
 
@@ -748,8 +731,6 @@ class ShapefileObjectProcessor extends ShapefileProcessor {
       $returnValue = $this->deriveTopoJson();
     } else {
 
-      // Submit the POST request to ogre
-      //$returnValue = $this->post($this->ogreUri . '/convert', array('file_contents' => '@' . $shp_file_path), $json_file_path);
       /**
        * ogr2ogr seems to require that vector data sets be reprojected into the EPSG:4326 SRS
        * Resolves GEO-25

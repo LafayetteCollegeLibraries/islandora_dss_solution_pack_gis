@@ -14,6 +14,9 @@ Please see the following resources for documents in relation to data modeling fo
   * ogr2ogr ([GDAL](http://www.gdal.org/)) is used to derive KML and GML Documents from Esri Shapefiles
   * topojson ([topojson](https://github.com/mbostock/topojson)) is used to derive GeoJSON Objects from Esri Shapefiles
       * This requires a local installation of [Node.js](https://nodejs.org/)
+      * topojson is used to simplify vector data sets through two processes
+          * [Simplification](https://github.com/mbostock/topojson/wiki/Command-Line-Reference#simplification) (the elimination of line segments and interpolation of more complex paths)
+          * [Quantization](https://github.com/mbostock/topojson/wiki/Command-Line-Reference#quantization) (the removal of polygons)
   * Should there be no WMS or WFS service available, OpenLayers can render the content of the datastreams for these derivatives
 * Geospatial Metadata
       * FGDC Documents are transformed into MODS-OGP Documents (using an XSL Stylesheet from [the GeoHydra MetaData ToolKit](https://github.com/sul-dlss/geohydra))

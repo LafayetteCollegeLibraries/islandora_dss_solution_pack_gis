@@ -13,12 +13,12 @@ $module_path = drupal_get_path('module', 'islandora_gis');
 
 module_load_include('inc', 'islandora_gis_geoserver', '/theme/theme');
 
-  /**
-   * Implements hook_islandora_required_objects().
-   *
-   * @param IslandoraTuque $connection Tuque instance for Fedora Commons
-   * @return type
-   */
+/**
+ * Implements hook_islandora_required_objects().
+ *
+ * @param IslandoraTuque $connection Tuque instance for Fedora Commons
+ * @return type
+ */
 function islandora_gis_islandora_required_objects(IslandoraTuque $connection) {
 
   $module_path = drupal_get_path('module', 'islandora_gis');
@@ -107,12 +107,6 @@ function islandora_gis_theme($existing, $type, $theme, $path) {
 	       );
 }
 
-function islandora_gis_theme_registry_alter($registry) {
-
-  //dpm(array_keys($registry));
-  //dpm($registry['openlayers_map']);
-}
-
 /**
  * Set the ID of a Feature linked to a given Islandora Object
  * @todo Migrate to islandora_gis_geoserver
@@ -131,7 +125,6 @@ function islandora_gis_set_feature_id($object, $feature_id) {
   $dc_doc->documentElement->appendChild( $dc_doc->createComment('This captures the WFS Feature ID of a related resource.') );
 
   //! @todo Cache the updated relationship
-
   return $ds_dc->setContentFromString($dc_doc->saveXml());
 }
 
@@ -181,13 +174,9 @@ function islandora_gis_get_feature_id($object) {
       // Retrieve the URL for the related resource
       $dc_doc->registerXPathNamespace('http://purl.org/dc/elements/1.1/', 'dc');
 
-      //dpm($dc_doc->asXml());
       $dc_relations = $dc_doc->xpath('//dc:relation[starts-with(text(), "' . geoserver_url() . '")]');
 
       $feature_id = NULL;
-      //if(!empty($dc_relations)) {
-
-      //$dc_relation = array_shift($dc_relations);
       foreach($dc_relations as $dc_relation) {
 
 	if(preg_match('/featureID\=(.+)?/', (string) $dc_relation, $m)) {
@@ -220,30 +209,6 @@ function islandora_gis_islandora_collectionCModel_islandora_view_object($object)
 
     $members = islandora_basic_collection_get_objects($object);
 
-    /*
-    foreach ($members as $member) {
-
-      $content_model = islandora_object_load($member['content']['value']);
-      if (isset($rows[$content_model->id])) {
-
-	$rows[$content_model->id][1]++;
-      } else {
-
-	$link = l($content_model->label, "islandora/object/{$content_model->id}");
-	$rows[$content_model->id] = array($link, 1);
-      }
-
-      dpm($member);
-    }
-    */
-
-    /*
-    $member_objects = array_map(function($e) {
-
-	return islandora_object_load($e['object']['value']);
-      }, $members);
-    */
-
     $islandora_feature_map = array();
     $member_objects = array();
 
@@ -259,22 +224,15 @@ function islandora_gis_islandora_collectionCModel_islandora_view_object($object)
 
     $map_output = islandora_gis_render_objects($member_objects, $object->label);
 
-    //module_load_include('inc', 'islandora_gis', 'includes/openlayers');
-
-    //$map_output = islandora_gis_render_objects($members);
     $output = theme('islandora_gis', array('islandora_object' => $object, 'islandora_content' => $map_output));
     return array('' => $output);
   }
 }
 
-/*
-function islandora_basic_collection_islandora_collectionCModel_islandora_view_object(FedoraObject $object) {
-
-  $output = theme('islandora_basic_collection_wrapper', array('islandora_object' => $object));
-  return array('Collection View' => $output);
-}
+/**
+ * Function for rendering GIS Objects using OpenLayers
+ *
  */
-
 function islandora_gis_render_objects($objects, $map_title) {
 
   module_load_include('inc', 'islandora_gis', 'includes/openlayers');
@@ -290,21 +248,11 @@ function islandora_gis_render_objects($objects, $map_title) {
     $objects = array($objects);
   }
 
-  // Functionality for islandora_gis_geoserver
-  // @todo Refactor with hooks
-  //variable_set('islandora_gis_view_object_pid', $object->id);
-  /*
-  variable_set('islandora_gis_view_object_pids', array_map(function($object) {
-
-	return $object->id;
-      }, $objects));
-  */
-
-  //$map = islandora_gis_map_load($object);
   $map = array_merge($map, islandora_gis_map_load($objects, $map_title));
 
   foreach($objects as $object) {
 
+    // Set the site variable to the PID of the Object being viewed
     variable_set('islandora_gis_view_object_pids', array($object->id));
 
     // Hook for islandora_gis_map_load_alter
@@ -333,8 +281,11 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_view_object($obje
  */
 function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($object) {
 
+  /**
+   * Both the GDAL and the topojson are required in order to derive the GML, KML, and GeoJSON datastreams from an Esri Shapefile
+   *
+   */
   $ogr2ogr_bin_path = variable_get('islandora_gis_ogr2ogr_path', '/usr/bin/env ogr2ogr');
-  //$topojson_bin_path = drupal_get_path('module', 'islandora_gis') . '/libraries/js/node_modules/topojson/bin/topojson';
   $topojson_bin_path = dirname(__DIR__) . '/islandora_gis/libraries/js/node_modules/topojson/bin/topojson';
   $geojson_bin_path = dirname(__DIR__) . '/islandora_gis/libraries/js/node_modules/topojson/bin/topojson-geojson';
 
@@ -347,7 +298,6 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
   $processor = new ShapefileObjectProcessor($object, NULL, $ogr2ogr_bin_path, $topojson_bin_path, $geojson_bin_path);
 
   // Manually invoke the ShapefileProcessor methods for non-existent derivative datastreams
-  //foreach(array('JSON' => 'GeoJson') as $dsid => $ds_label) {
   foreach(array('GML' => 'Geography Markup Language',
 		'KML' => 'Keyhole Markup Language',
 		'JSON' => 'GeoJson') as $dsid => $ds_label) {
@@ -389,15 +339,6 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 
       case 'M':
 
-	/*
-	if($is_valid_url) {
-
-	  $datastream->setContentFromUrl($datastream_file);
-	} else {
-
-	  $datastream->setContentFromFile($datastream_file);
-	}
-	*/
 	$datastream->setContentFromString(file_get_contents($datastream_file));
 	break;
 
@@ -416,6 +357,7 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 	drupal_set_message(t('A problem occured while ingesting the datastream "@label" for @pid, please notify the administrator.', array('@label' => $label, '@pid' => $object->id)), 'error');
       }
 
+      // Simplification must be undertaken for JSON datastream content
       // @todo Refactor
       if($dsid == 'JSON') {
 	
@@ -426,7 +368,6 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
 
   // For the FGDC metadata transformation
   $fgdc_ds = $object['FGDC'];
-  //if(isset($fgdc_ds)) {
   if($fgdc_ds) {
     
     $xsl_file_path = dirname(__DIR__) . '/islandora_gis/libraries/xsl/fgdc2mods.xsl';
@@ -450,7 +391,6 @@ function islandora_gis_islandora_sp_shapefile_cmodel_islandora_object_ingested($
     file_unmanaged_delete($mods_file);
   }
 }
-
 
 /**
  * Implements hook_islandora_xml_form_builder_forms().
@@ -536,7 +476,6 @@ function islandora_gis_gdalinfo() {
 function islandora_gis_object_update_georeferenced($object) {
 
   // Retrieve the GeoTIFF
-  //$file_path = file_unmanaged_save_data($object['OBJ']->content, 'temporary://islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff');
   $file_path = '/tmp/islandora_gis_' . preg_replace('/\:/', '_', $object->id) . '.tiff';
   $object['OBJ']->getContent($file_path);
 
@@ -556,19 +495,6 @@ function islandora_gis_object_update_georeferenced($object) {
      * Due to the certain limitations of php5-gdal, these values must be parsed from the output streamed to STDOUT
      *
      */
-
-    /*
-    // Iterate through all layers for the data set
-    for($i=0;$i < $dataset->GetLayerCount(); $i++) {
-
-      $layer = $dataset->getLayer($i);
-
-      //! @todo Integrate parsing for the zunit and elevation values
-      $dcmi_point = 'east=' . $layer->GetExtent()->minX . '; north=' . $layer->GetExtent()->minY . '; units=' . $srs->GetAttrValue('UNIT') . '; projection=' . $srs->GetAttrValue('PROJCS') . " name=" . $layer->GetName();
-      $dc_doc->dc->addChild('dc:coverage', $dcmi_point);
-    }
-    */
-
     $data = islandora_gis_gdalinfo($file_path);
 
     $dcmi_point = 'east=' . $data['xmin'] . '; north=' . $data['ymax'] . '; projection=' . $data['projection'] . "; name=" . $object->label;
@@ -579,7 +505,6 @@ function islandora_gis_object_update_georeferenced($object) {
     $dc_doc->documentElement->appendChild( $bbox_elem );
     $dc_doc->documentElement->appendChild( $dc_doc->createComment('This models the bounding box generated from the digital surrogate in the GeoTIFF.') );
 
-    //file_unmanaged_delete($file_path);
     unlink($file_path);
 
     $object['DC']->setContentFromString($dc_doc->saveXml());
