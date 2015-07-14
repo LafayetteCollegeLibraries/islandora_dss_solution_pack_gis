@@ -207,9 +207,6 @@ function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 		  'google_satellite' => 'google_satellite',
 		  );
 
-  // Load the layer from the Islandora Object
-  //$islandora_layers = islandora_gis_layer_load(variable_get('islandora_gis_default_openlayers_ds_id', 'JSON'), $objects);
-
   // Load the default layer based upon the project
   $default_layer = variable_get('islandora_gis_openlayers_default_layer', 'google_normal');
 
@@ -223,27 +220,20 @@ function islandora_gis_map_load($objects, $map_title, $map_desc_xpath = NULL) {
 				 'behaviors' => $behaviors,
 				 'default_layer' => $default_layer,
 				 'layers' => $layers,
-
-				 //'layer_activated' => array(),
-
-				 //'projection' => 'EPSG:3857',
 				 'projection' => 'EPSG:4326',
 				 'displayProjection' => 'EPSG:4326',
 				 'styles' => array('default' => 'default',
 						   'select' => 'default_select',
 						   'temporary' => 'default',
 						   ),
-				 /*
-				 'islandora_layers' => array(array('layer' => $islandora_layer,
-				 'callback' => '_islandora_gis_layers_process')),
-				 */
 				 'islandora_layers' => array(),
-				 //'islandora_layers' => $islandora_layers,
 				 'minExtent' => array(-1, -1, 1, 1),
 				 'maxExtent' => array(-180, -90, 180, 90)
 				 );
 
-  /*
+  /**
+   * Various issues exist in relation to the extraction of extent values from a given Shapefile
+   *
   if(module_exists('islandora_gis_geoserver')) {
 
     $openlayers_maps->data['max_extent'] = islandora_gis_geoserver_max_extent($object);
@@ -297,17 +287,7 @@ function islandora_gis_build_map($map = array()) {
   $map['layer_styles_temporary'] = isset($map['layer_styles_temporary']) ? $map['layer_styles_temporary'] : array();
 
   // Process map parts.
-
-  /*
-  // This assumes that the Islandora Layer is always the last in the array
-  $islandora_layer = array_pop($map['layers']);
-
-  $map['islandora_layer'] = array('layer' => $islandora_layer,
-				  'callback' => '_islandora_gis_layers_process');
-  */
-
   $map['layers'] = _openlayers_layers_process($map['layers'], $map);
-  //$map['layers'] = array_merge($map['layers'], _islandora_gis_layers_process(array($islandora_layer), $map));
 
   // Retrieve the Layer Object from the Islandora Layer
   foreach($map['islandora_layers'] as $index => $islandora_layer) {
@@ -318,7 +298,6 @@ function islandora_gis_build_map($map = array()) {
     $layer_name = $layer['title'];
     if(array_key_exists($layer['title'], $map['layers'])) {
       
-      //$map['layers'][$layer['title'] . "($index)"] = $layer;
       $layer_name = $layer['title'] . "_$index";
     }
 
@@ -376,7 +355,7 @@ function islandora_gis_build_map($map = array()) {
     // @author griffinj@lafayette.edu
     // Override the maximum number of zoom levels with the maximum by default    
     $map['layers'][$layer_name]['numZoomLevels'] = variable_get('islandora_gis_openlayers_numzoomlevels', 21);
-    $map['layers'][$layer_name]['minResolution'] = '0.059716428337097';
+    $map['layers'][$layer_name]['minResolution'] = '0.059716428337097'; // @todo This needs to be resolved from a hard-coded constant
 
     $default_layer_names = array('google_satellite' => 'Satellite View',
 				 'google_normal' => 'Map View',
@@ -387,8 +366,6 @@ function islandora_gis_build_map($map = array()) {
 
       $map['layers'][$layer_name]['title'] = $layer_names[$layer_name];
     }
-
-    //dpm($map['layers']);
   }
 
   // Hook to alter map one last time.  Final modification to existing
