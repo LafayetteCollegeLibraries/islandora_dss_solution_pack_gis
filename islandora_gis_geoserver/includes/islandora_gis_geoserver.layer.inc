@@ -6,10 +6,8 @@
    *
    */
 
-$module_path = drupal_get_path('module', 'islandora_dss');
-include_once "$module_path/libraries/Islandora.php";
-
 $module_path = drupal_get_path('module', 'islandora_gis_geoserver');
+include_once "$module_path/libraries/Islandora.php";
 include_once "$module_path/libraries/IslandoraGeoServerClient.php";
 include_once "$module_path/libraries/Shapefile.php";
 

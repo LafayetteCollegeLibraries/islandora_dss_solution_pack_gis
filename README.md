@@ -1,11 +1,11 @@
 Islandora GIS Solution Pack
 ===============================
 
-Islandora Content Model and Modules for the Management of GIS Material
+# Islandora Content Model and Modules for the Management of GIS Material
 
-# Functional Requirements
+## Functional Requirements
 
-## Lafayette College Libraries
+### Lafayette College Libraries
 _(Much of this was identified by John H. Clark, the Data Visualization and GIS Librarian at Lafayette College)_
 
 * Managing Base Maps (for interfacing with a Web Mapping Service [e. g. GeoServer])
@@ -39,7 +39,7 @@ _(This was posed as a question by [Kim Pham](https://twitter.com/tolloid) of the
      * How must .mxd content be managed?
      * How must .lyr content be managed?
 
-# User Stories
+## User Stories
 
-## Lafayette College Libraries
+### Lafayette College Libraries
 *(Forthcoming)*

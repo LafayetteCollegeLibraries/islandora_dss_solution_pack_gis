@@ -387,7 +387,8 @@ function islandora_gis_build_map($map = array()) {
 
       $map['layers'][$layer_name]['title'] = $layer_names[$layer_name];
     }
-    dpm($map['layers']);
+
+    //dpm($map['layers']);
   }
 
   // Hook to alter map one last time.  Final modification to existing

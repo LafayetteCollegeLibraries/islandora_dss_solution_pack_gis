@@ -1,0 +1,65 @@
+<?php
+
+  /**
+   * @file Hook implementations and functionality for the installation of the module
+   * @author griffinj@lafayette.edu
+   *
+   */
+
+function islandora_gis_geoserver_install() {
+
+  // Create an Islandora GIS Feature Content Type
+  $type_values = array(
+		       //'op' => 'Save content type',
+		       'type' => 'islandora_gis_feature',
+		       'name' => 'Islandora GIS Feature',
+		       //'orig_type' => '',
+		       //'old_type' => '',
+		       'description' => 'A GeoServer Feature modeling content which can be ingested into Islandora',
+		       'help' => 'Exp',
+		       //'title_label' => '',
+		       'body_label' => 'Abstract',
+		       //'base' => '',
+		       'custom' => '1',
+		       'locked' => '0',
+		       'modified' => '1'
+		       );
+
+  // $op = isset($type_values['op']) ? $type_values['op'] : '';
+
+  $type = node_type_set_defaults();
+  $type->type = trim($type_values['type']);
+  $type->name = trim($type_values['name']);
+  //$type->orig_type = trim($type_values['orig_type']);
+  //$type->old_type = isset($type_values['old_type']) ? $type_values['old_type'] : $type->type;
+  $type->description = $type_values['description'];
+  $type->help = $type_values['help'];
+  //$type->title_label = $type_values['title_label'];
+  $type->body_label = $type_values['body_label'];
+
+  // title_label is required in core; has_title will always be true, unless a
+  // module alters the title field.
+
+  //$type->has_title = ($type->title_label != '');
+  //$type->has_body = ($type->body_label != '');
+  $type->has_body = TRUE;
+
+  //$type->base = !empty($type_values['base']) ? $type_values['base'] : 'node_content';
+  $type->base = 'node_content';
+
+  $type->custom = $type_values['custom'];
+  $type->modified = true;
+  $type->locked = $type_values['locked'];
+
+  //variable_set('teaser_length_' . 600);
+  //variable_set('node_preview_' . 1);
+
+  // Saving the content type after saving the variables allows modules to act
+  // on those variables via hook_node_type_insert().
+  $status = node_type_save($type);
+  node_types_rebuild();
+  menu_rebuild();
+  $t_args = array('%name' => $type->name);
+
+  
+  }

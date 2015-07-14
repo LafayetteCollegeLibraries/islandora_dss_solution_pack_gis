@@ -41,8 +41,8 @@ function islandora_gis_preprocess_islandora_basic_collection_wrapper(&$vars) {
 
   $islandora_feature_map = variable_get('islandora_gis_geoserver_islandora_feature_map', array());
 
-  dpm($islandora_feature_map);
-  dpm($vars);
+  //dpm($islandora_feature_map);
+  //dpm($vars);
 }
 
 function islandora_gis_preprocess_islandora_gis_popup(&$vars) {
@@ -62,7 +62,7 @@ function islandora_gis_preprocess_islandora_gis_popup(&$vars) {
  */
 function islandora_gis_preprocess_openlayers_map(&$vars) {
 
-  dpm($vars);
+  //dpm($vars);
 
   drupal_add_css(drupal_get_path('module', 'islandora_gis') . '/css/islandora_gis.css');
 
@@ -114,7 +114,7 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
    *
    */
   $default_zoom_extent = variable_get('islandora_gis_openlayers_default_zoom_extent', array());
-  dpm($default_zoom_extent);
+  //dpm($default_zoom_extent);
 
   if(empty($default_zoom_extent)) {
     
@@ -157,7 +157,9 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
 	return $u;
       });
   }
-  dpm($default_zoom_extent);
+
+  // For debugging the default zoom extent
+  //dpm($default_zoom_extent);
 
   // Reduce
   $default_zoom_extent = array(-8373859.3930893,
@@ -165,8 +167,6 @@ function islandora_gis_preprocess_openlayers_map(&$vars) {
 			       -8371064.6642431,
 			       4967187.553817,
 			       );
-
-  dpm($default_zoom_extent);
 
   $js = array('islandoraGis' => array('features' => $islandora_feature_map,
 				      'defaultZoomExtent' => $default_zoom_extent

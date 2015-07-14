@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * Core hook implementations and functionality for the Islandora GIS Timeline Module
+ * @author griffinj@lafayette.edu
+ *
+ */
+
+module_load_include('inc', 'islandora_gis_timeline', '/theme/theme');
+
+function islandora_gis_timeline_event_source($islandora_object_pid) {
+
+  $response = array();
+
+  // Retrieve the eventSource data generated for a given Shapefile
+  if(!empty($islandora_object_pid)) {
+
+    // Load the Islandora Object
+    $object = islandora_object_load($islandora_object_pid);
+
+    // Attempt to retrieve the datastream containing the eventSource Object
+    $event_source_ds = $object['EVENT-SOURCE'];
+
+    if(!$event_source_ds) {
+
+      $response = array('events' => array(
+					  array('start' => 'May 20 1961 00:00:00 GMT-0600',
+						'end' => 'May 20 1961 00:00:00 GMT-0600',
+						'title' => 'event1',
+						'description' => 'An event',
+						'durationEvent' => false),
+
+					  array('start' => 'April 20 1961 00:00:00 GMT-0600',
+						'title' => 'event4',
+						'durationEvent' => false),
+
+					  array('start' => 'March 20 1961 00:00:00 GMT-0600',
+						'end' => 'March 25 1961 00:00:00 GMT-0600',
+						'title' => 'event5',
+						'durationEvent' => false),
+
+					  array('start' => 'June 20 1961 00:00:00 GMT-0600',
+						'end' => 'July 20 1961 00:00:00 GMT-0600',
+						'title' => 'event2',
+						'durationEvent' => true),
+					  
+					  array('start' => 'August 20 1961 00:00:00 GMT-0600',
+						'end' => 'October 20 1961 00:00:00 GMT-0600',
+						
+						'latestStart' => 'September 1 1961 00:00:00 GMT-0600',
+						'earliestEnd' => 'October 1 1961 00:00:00 GMT-0600',
+					    
+						'title' => 'event3',
+						'durationEvent' => true),
+					  )
+			);
+      //$response = array('events' => array());
+
+    } else {
+
+      // Load the JSON Object
+      $response = json_decode($event_source_ds->content);
+    }
+  }
+
+  return $response;
+}
+
+/**
+ * Callback for the Timeline EventSource data
+ *
+ */
+function islandora_gis_timeline_event_source_ajax($islandora_object_pid) {
+
+  $response = array();
+
+  if(empty($islandora_object_pid)) {
+
+    drupal_add_http_header('Status', '400 Bad Request');
+  } else {
+
+    $response = islandora_gis_timeline_event_source($islandora_object_pid);
+  }
+
+  drupal_json_output($response);
+}
+
+/**
+ * Implements hook_menu()
+ *
+ */
+function islandora_gis_timeline_menu() {
+
+  $items = array('islandora_gis_timeline/event_source' => array(
+								'page callback' => 'islandora_gis_timeline_event_source_ajax',
+								'access callback' => TRUE,
+								),
+		 );
+
+  return $items;
+}

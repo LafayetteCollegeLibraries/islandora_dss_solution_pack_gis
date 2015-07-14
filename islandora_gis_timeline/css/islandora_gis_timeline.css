@@ -1,0 +1,22 @@
+/**
+ * Styling rules for the integration of the SIMILE Timeline widget
+ * @author griffinj@lafayette.edu
+ *
+ */
+
+.timeline-container {
+
+    height: 120px;
+}
+
+/*
+.timeline-band-0 {
+
+    height: 282px !important;
+}
+
+.timeline-band-1 {
+
+    height: 70px !important;
+}
+*/
