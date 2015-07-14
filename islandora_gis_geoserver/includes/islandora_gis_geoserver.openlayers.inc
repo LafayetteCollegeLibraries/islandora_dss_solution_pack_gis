@@ -5,7 +5,6 @@
    * @author griffinj@lafayette.edu
    *
    */
-
 function islandora_gis_geoserver_openlayers_title($gs_layer_title) {
 
   $ol_layer_title = $gs_layer_title;
@@ -31,11 +30,11 @@ function islandora_gis_geoserver_openlayers_title($gs_layer_title) {
 
 /**
  * Implements hook_openlayers_layers().
+ *
  */
 function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
   $ol_layers = array();
-  //$gs_layers = geoserver_layers_load();
   $gs_layers = islandora_gis_geoserver_layers_load();
   $url = geoserver_url();
   $workspace = variable_get('geoserver_workspace', '');
@@ -53,9 +52,6 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
       } ));
   */
 
-  //dpm($wfs_layer_count);
-  dpm($gs_layers);
-
   foreach (array_values($gs_layers) as $gs_layer) {
 
     if (!isset($gs_layer->data['openlayers'])) {
@@ -66,7 +62,6 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
     $openlayers = $gs_layer->data['openlayers'];
 
-    //if ($openlayers['wms']) {
     if(array_key_exists('wms', $openlayers)) {
     
       $data = isset($openlayers['wms_data']) ? $openlayers['wms_data'] : array();
@@ -104,48 +99,14 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
 
     } elseif(array_key_exists('wfs', $openlayers)) {
 
-      /*
-	if ($openlayers['wfs']) {
-      $style = $gs_layer->data['style'];
-      $sld = isset($gs_styles[$style]) ? $gs_styles[$style]->data : '';
-      $data = isset($openlayers['wfs_data']) ? $openlayers['wfs_data'] : array();
-      $ol_layer = new stdClass();
-      $ol_layer->api_version = 1;
-      $ol_layer->name = $gs_layer->name . '_wfs';
-      $ol_layer->title = $gs_layer->title;
-      $ol_layer->description = t('WFS layer of GeoServer layer !name',
-          array('!name' => $gs_layer->name));
-      $ol_layer->data = array(
-        'attribution' =>  isset($gs_layer->data['attribution']) ? $gs_layer->data['attribution'] : NULL,
-        'layer_type' => 'openlayers_layer_type_geoserver_wfs',
-        'sld' => $sld,
-        'url' => $url . $workspace . '/ows',
-        'typeName' => $workspace . ':' . $gs_layer->name,
-        'strategy' => isset($data['strategy']) ? $data['strategy'] : 'bbox',
-        'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
-        'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
-      );
-      $ol_layers[$ol_layer->name] = $ol_layer;
-    }
-      */
-
-      
-
-
-
-      // geoserver/plugins/openlayers/layer_types/openlayers_layer_type_geoserver_wfs.inc
-      //$style = $gs_layer->data['style'];
-      //$sld = isset($gs_styles[$style]) ? $gs_styles[$style]->data : '';
       $data = isset($openlayers['wfs_data']) ? $openlayers['wfs_data'] : array();
       $ol_layer = new stdClass();
       $ol_layer->api_version = 1;
       $ol_layer->name = $gs_layer->name . '_wfs';
 
-      //$ol_layer->title = $gs_layer->title;
       $ol_layer->title = islandora_gis_geoserver_openlayers_title($gs_layer->title);
 
       $ol_layer->description = t('WFS layer of GeoServer layer !name',
-				 //array('!name' => $gs_layer->name . ' (GeoServer)'));
 				 array('!name' => '(GeoServer)'));
 
       // Extending this to providing a mapping between web feature names and Islandora Objects
@@ -166,18 +127,11 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
       $ol_layer->data = array('attribution' =>  isset($gs_layer->data['attribution']) ? $gs_layer->data['attribution'] : NULL,
 			      'layer_type' => 'openlayers_layer_type_geoserver_wfs',
 			      'sld' => '',
-
-			      //'url' => $url . $workspace . '/ows',
 			      'url' => $url . 'wfs',
-
-			      //'typeName' => $workspace . ':' . $gs_layer->name,
 			      'typeName' => $typeName,
-
 			      'strategy' => isset($data['strategy']) ? $data['strategy'] : 'bbox',
 			      'isBaseLayer' => isset($data['isBaseLayer']) ? $data['isBaseLayer'] : FALSE,
-			      //'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:900913', 'EPSG:3857'),
 			      'projection' => isset($data['projection']) ? $data['projection'] : array('EPSG:4326'),
-
 			      'visibility' => $wfs_layer_count == 1 // Ensures that, for cases in which multiple WFS layers are available, all are disabled by default
 			      );
 
@@ -187,4 +141,4 @@ function _islandora_gis_geoserver_openlayers_layers($wfs_layer_count = 1) {
   }
 
   return $ol_layers;
-  }
+}

@@ -12,43 +12,9 @@ include_once "$module_path/libraries/IslandoraGeoServerClient.php";
 include_once "$module_path/libraries/Shapefile.php";
 
 /**
- * Get layer object
- *
- * @ingroup openlayers_api
- * @param $reset
- *   Boolean whether to reset cache or not
- * @return array
- *   array of layer info
- */
-function islandora_gis_geoserver_get_layer_object($map) {
-
-  /*
-  // Static cache because this function will possibly be called in big loops.
-  static $layer_types;
-  if (!isset($layer_types)) {
-    $layer_types = geoserver_layer_types();
-  }
-
-  $layer->title = t($layer->title);
-  $layer->description = t($layer->description);
-
-  if (is_array($layer->data) && isset($layer->data['type']) &&  isset($layer_types[$layer->data['type']])) {
-    $layer_class = ctools_plugin_get_class($layer_types[$layer->data['type']], 'layer_type');
-    if ($layer_class) {
-      return new $layer_class($layer);
-    }
-  }
-  watchdog('geoserver', 'Layer %name is unavailable because its layer type or the module that provides its layer type is missing',
-    array('%name' => $layer->name), WATCHDOG_ERROR);
-  return FALSE;
-  */
-
-  $layer->title = t($layer->title);
-  $layer->description = t($layer->description);
-}
-
-/**
  * Implements hook_user_login().
+ * @todo This must be extended to permit authentication using additional credentials
+ *
  */
 function islandora_gis_geoserver_user_login(&$edit, $account) {
 
@@ -69,6 +35,11 @@ function islandora_gis_geoserver_user_login(&$edit, $account) {
   }
 }
 
+/**
+ * Retrieve the Islandora Large Image Objects set as raster data sets in relation to Shapefile Objects
+ * (This provides the mechanism by which to serve GeoTIFF's as raster "base maps")
+ *
+ */
 function islandora_gis_geoserver_get_base_maps($object) {
 
   $connection = islandora_get_tuque_connection();
@@ -85,11 +56,6 @@ function islandora_gis_geoserver_get_base_maps($object) {
   $query_array = array('query' => $query,
 		       'type' => 'sparql',
 		       );
-
-  //$layers = array();
-
-  //foreach($connection->repository->ri->query($query_array['query'], $query_array['type']) as $result) {  
-  //return $connection->repository->ri->query($query_array['query'], $query_array['type']);
 
   $results = array_map(function($result) {
 
@@ -111,12 +77,12 @@ function islandora_gis_geoserver_max_extent($shp_object, $objects = NULL) {
     $objects = islandora_gis_geoserver_get_base_maps($shp_object);
   }
 
+  // @todo Resolve issues in relation to the extraction of the maximum extent
   //$max_extent = array(-1, -1, 1, 1);
   $max_extent = NULL;
 
   if(!empty($objects)) {
 
-    //$object = $objects[0];
     $object = array_pop($objects);
 
     $dc_doc = new SimpleXmlElement($object['DC']->content);
@@ -126,6 +92,7 @@ function islandora_gis_geoserver_max_extent($shp_object, $objects = NULL) {
     $dc_coverage = array_pop($elems);
     $values = explode(';', (string) $dc_coverage);
 
+    // Retrieve the max. extent from the <dc:coverage> elements
     $max_extent = array_map(function($value) {
 
 	preg_match('/[a-z]{4}\=(.+)/', $value, $m);
@@ -149,18 +116,12 @@ function islandora_gis_geoserver_base_maps_load($object) {
     //! @author griffinj@lafayette.edu
     $max_extent = islandora_gis_geoserver_max_extent($object);
 
-    //dpm($max_extent);
     $default_zoom_extent = variable_set('islandora_gis_openlayers_default_zoom_extent', array());
 
     /*
-    $max_extent = array(-8375376.6495653,
-			4966152.1011441,
-			-8369787.1918727,
-			4968063.0268509);
-    */
-
-    dpm($max_extent);
-
+     * @todo Resolve issues in relation to the max. extent
+     *
+     */
     $max_extent = array(
 			-23461887.206699,
 			-1193640.6335351,
@@ -168,9 +129,6 @@ function islandora_gis_geoserver_base_maps_load($object) {
 			-567468.49790947,
 			6633511.0617773
 			);
-
-    //$max_extent = array(-180, -90, 180, 90);
-    //$max_extent = 'auto';
 
     $coverage_name = preg_replace('/\:/', '_', $base_map_object->id);
 
@@ -180,11 +138,8 @@ function islandora_gis_geoserver_base_maps_load($object) {
 
     $layer->data = array('openlayers' => array('wms' => TRUE,
 					       'wms_data' => array('isBaseLayer' => FALSE,
-								   'projection' => array('EPSG:900913', 'EPSG:3857'),
-								   //'projection' => array('EPSG:4326'),
+								   'projection' => array('EPSG:900913', 'EPSG:3857'), // @todo Resolve outlying issues in relation to the EPSG:4326 projection
 								   'maxResolution' => 'auto',
-								   //'minResolution' => 'auto',
-								   //'minExtent' => array(-1,-1,1,1),
 								   'maxExtent' => $max_extent
 								   )));
     $layers[] = $layer;
@@ -198,12 +153,8 @@ function islandora_gis_geoserver_base_maps_load($object) {
   $layer->title = $object->label;
 
   $layer->data = array('openlayers' => array('wfs' => TRUE,
-					     'wfs_data' => array(
-								 //'isBaseLayer' => TRUE,
-								 'isBaseLayer' => FALSE,
-								 //'projection' => array('EPSG:900913', 'EPSG:3857'),
+					     'wfs_data' => array('isBaseLayer' => FALSE,
 								 'projection' => array('EPSG:4326'),
-								 //'maxExtent' => $max_extent
 								 )));
 
   $layers[] = $layer;
@@ -218,11 +169,10 @@ function islandora_gis_geoserver_base_maps_load($object) {
  */
 function islandora_gis_geoserver_layers_load() {
 
+  // PID's should be set at the level of the site for all raster data sets in relation to a Shapefile
   $layers = array();
-  //$object_pid = variable_get('islandora_gis_view_object_pid', '');
   $object_pids = variable_get('islandora_gis_view_object_pids', '');
 
-  //if(!empty($object_pid)) {
   foreach($object_pids as $object_pid) {
 
     $session = islandora_dss_get_session();
@@ -238,7 +188,6 @@ function islandora_gis_geoserver_layers_load() {
 
       if ($base_map_layer) {
 	  
-	//$layers[$index] = $base_map_layer;
 	$layers[] = $base_map_layer;
       }
     }

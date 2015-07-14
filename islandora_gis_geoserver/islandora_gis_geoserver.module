@@ -29,22 +29,11 @@ function islandora_gis_geoserver_ctools_plugin_api($module, $api) {
 
 /**
  * Implements hook_ctools_plugin_type().
+ *
  */
 function islandora_gis_geoserver_ctools_plugin_type() {
 
   return array('layer_types' => array());
-}
-
-/**
- * Implements hook_CMODEL_PID_islandora_object_ingested().
- *
- */
-//function islandora_large_image_islandora_sp_large_image_cmodel_islandora_object_ingested($object) {
-function islandora_gis_geoserver_islandora_sp_large_image_cmodel_islandora_object_ingested($object) {
-
-  // Verify that this is a GeoTIFF
-  
-  // Relate this to a Shapefile
 }
 
 /**
@@ -78,18 +67,6 @@ function islandora_gis_geoserver_get_session($user = 'admin', $pass = 'secret', 
  */
 function islandora_gis_geoserver_islandora_gis_map_load_alter(&$map, $layer_count) {
 
-  //$map['islandora_layers'] = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers($layer_count));
-
   $islandora_layers = array_merge($map['islandora_layers'], _islandora_gis_geoserver_openlayers_layers($layer_count));
   $map['islandora_layers'] = $islandora_layers;
-  
-  //$map['islandora_layers'][] = _islandora_gis_geoserver_openlayers_layers($layer_count);
-  
-  /*
-  // Resolve visibility issues here
-  foreach($map['islandora_layers'] as &$islandora_layer) {
-
-    $islandora_layer['layer']->data['visibility']
-  }
-  */
 }
